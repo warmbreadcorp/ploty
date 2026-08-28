@@ -454,8 +454,6 @@ body.auth-locked header .util .hidden{display:none}
     <div class="row">
       <button class="btn red" onclick="saveSettings()">저장</button>
       <button class="btn line" onclick="closeSettings()">닫기</button>
-      <div style="flex:1"></div>
-      <button class="btn line" onclick="resetAll()">이 브라우저 초기화</button>
     </div>
   </div>
 </div>
@@ -1569,7 +1567,6 @@ function renderOnb(){
 function openSettings(){ document.getElementById('api-key-input').value=state.apiKey; document.getElementById('modal-settings').classList.remove('hidden'); }
 function closeSettings(){ document.getElementById('modal-settings').classList.add('hidden'); }
 function saveSettings(){ state.apiKey=document.getElementById('api-key-input').value.trim(); save(); closeSettings(); }
-function resetAll(){ if(confirm('이 브라우저에 저장된 데이터를 지우고, 계정에 저장된 내용을 다시 불러와요. 계속할까요?')){ localStorage.removeItem(LS_KEY); location.reload(); } }
 function exportJSON(){
   const a=document.createElement('a');
   a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(state,null,2));
