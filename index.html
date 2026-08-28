@@ -138,9 +138,7 @@ body.auth-locked header .util .hidden{display:none}
 .step textarea{width:100%;border:none;border-radius:8px;background:#f5f5f5;padding:12px 13px;min-height:58px;resize:none;overflow:hidden}
 .step textarea:focus{outline:2px solid var(--ink)}
 .step .tools{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
-.benefit-types{display:flex;gap:6px;flex-wrap:wrap}
-.benefit-types button{font-size:0.74rem;font-weight:500;padding:5px 12px;border:1.5px solid var(--rule);border-radius:8px;color:var(--ink-60);white-space:nowrap}
-.benefit-types button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.benefit-select{background:#f5f5f5;border:none;border-radius:8px;padding:9px 12px;font-size:0.82rem;color:var(--ink);max-width:100%;margin-top:10px;display:block}
 .chain{display:flex;flex-direction:column;gap:5px}
 .chain .seed{background:#f5f5f5;border-radius:8px;padding:10px 13px;font-size:0.9rem;color:var(--ink-60)}
 .chain .arrow{font-size:0.74rem;color:var(--ink-30);padding:2px 0 2px 13px;text-align:left;align-self:flex-start;cursor:pointer}
@@ -260,7 +258,7 @@ body.auth-locked header .util .hidden{display:none}
   .guide{font-size:0.84rem;padding:10px 12px}
   .plan-grid{gap:16px}
   .ai-panel{position:static;max-height:none}
-  .benefit-types button{font-size:0.82rem;padding:9px 14px}
+  .benefit-select{padding:11px 12px}
   .chain .cx{padding:10px 12px;font-size:1rem}
   .chain .arrow{padding:8px 0 8px 13px}
   .chain .addwhy{padding:10px 16px;font-size:0.85rem}
@@ -756,9 +754,10 @@ function renderSteps(){
   el.innerHTML = STEP_DEFS.map((s,i)=>{
     const val=p.card[s.key]||'';
     const benefitTypes = s.key==='benefit' ? `
-      <div class="benefit-types">
-        ${BENEFIT_TYPES.map(t=>`<button class="${p.card.benefitType===t.v?'on':''}" onclick="setBenefitType('${t.v}')">${t.l}</button>`).join('')}
-      </div>`:'';
+      <select class="benefit-select" onchange="setBenefitType(this.value)">
+        <option value="" ${!p.card.benefitType?'selected':''}>어느 쪽인지 골라주세요</option>
+        ${BENEFIT_TYPES.map(t=>`<option value="${t.v}" ${p.card.benefitType===t.v?'selected':''}>${t.l}</option>`).join('')}
+      </select>`:'';
     const body = s.key==='decompose' ? chainHTML(p) :
       `<textarea data-step="${s.key}" placeholder="${s.ph}" oninput="onStepInput(this)">${esc(val)}</textarea>`;
     return `
@@ -766,8 +765,8 @@ function renderSteps(){
       <div class="head"><span class="num">${i+1}</span><span class="name">${s.name}</span>${s.sub?`<span class="muted" style="font-size:0.75rem">${s.sub}</span>`:''}<span class="check">✓</span></div>
       <div class="desc">${s.desc}</div>
       ${body}
+      ${benefitTypes}
       <div class="tools">
-        ${benefitTypes}
         <div style="flex:1"></div>
         <button class="btn line sm" id="ref-${s.key}" onclick="runRefine('${s.key}')" ${val.trim()?'':'disabled'}>다듬기</button>
         <button class="btn sm" id="sug-${s.key}" onclick="runSuggest('${s.key}')">AI 추천받기</button>
@@ -836,7 +835,7 @@ function onStepInput(t){
   }
   renderGuide();
 }
-function setBenefitType(t){ const p=proj(); p.card.benefitType=(p.card.benefitType===t?'':t); markStale(); save(); renderSteps(); }
+function setBenefitType(t){ const p=proj(); p.card.benefitType=t; markStale(); save(); }
 function markStale(){
   const p=proj();
   if(p && p.score!=null && !p.scoreStale){ p.scoreStale=true; renderScoreBadge(); }
