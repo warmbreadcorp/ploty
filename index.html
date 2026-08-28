@@ -1571,8 +1571,9 @@ window.addEventListener('pagehide',()=>{
 });
 async function afterLogin(user, id){
   supaUser=user;
-  // 이 브라우저에 남아있는 데이터가 다른 계정의 것이면 버리고 시작 (계정끼리 섞이지 않게)
-  if(state.owner && state.owner!==user.id){
+  // 이 브라우저에 남은 데이터는 지금 로그인한 계정의 것이 확실할 때만 유지.
+  // 주인이 다르거나 표시가 없으면 무조건 버리고, 계정에 저장된 것만 불러옴.
+  if(state.owner!==user.id){
     state.materials=[]; state.projects=[]; state.activeProject=null; state.apiKey=''; state.deleted={};
   }
   state.owner=user.id;
