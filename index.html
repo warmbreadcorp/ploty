@@ -75,6 +75,7 @@ body.auth-locked .wrap{display:none}
 body.auth-locked .bottom-nav{display:none !important}
 .bottom-nav{display:none}
 .sec-nav{display:none}
+.guide-mini{display:none}
 body.auth-locked header .util .hidden{display:none}
 .empty-hint{grid-column:1/-1;width:100%;padding:70px 0;text-align:center;color:var(--ink-30);font-size:0.95rem}
 .empty-hint b{color:var(--ink)}
@@ -256,6 +257,10 @@ body.auth-locked header .util .hidden{display:none}
   .bottom-nav button svg{width:22px;height:22px}
   .bottom-nav button.active{color:#fff}
   .sec-nav{display:flex;position:sticky;top:0;z-index:50;background:var(--bg);gap:2px;margin:0 -14px 16px;padding:6px 10px;border-bottom:1px solid var(--rule)}
+  .guide-mini{position:fixed;left:10px;right:10px;bottom:calc(66px + env(safe-area-inset-bottom));z-index:55;display:none;align-items:center;gap:8px;background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:11px 14px;box-shadow:0 6px 20px rgba(0,0,0,0.14);font-size:0.8rem;text-align:left}
+  .guide-mini.show{display:flex}
+  .guide-mini .glabel{color:var(--red);font-weight:700;font-size:0.72rem;white-space:nowrap}
+  .guide-mini #guide-mini-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
   .sec-nav button{flex:1;padding:8px 4px;font-size:0.8rem;font-weight:600;color:var(--ink-30);border-radius:8px}
   .sec-nav button:active{background:#eaeaea;color:var(--ink)}
   #steps,.ai-panel,.board-head,.script-head{scroll-margin-top:52px}
@@ -386,6 +391,9 @@ body.auth-locked header .util .hidden{display:none}
       <button onclick="secJump('board')">플롯</button>
       <button onclick="secJump('script')">대본</button>
     </div>
+    <button class="guide-mini" id="guide-mini" onclick="guideAction()">
+      <span class="glabel">다음 할 일</span><span id="guide-mini-text"></span>
+    </button>
 
     <div class="plan-grid">
       <div>
@@ -447,7 +455,7 @@ body.auth-locked header .util .hidden{display:none}
       <button class="btn red" onclick="saveSettings()">저장</button>
       <button class="btn line" onclick="closeSettings()">닫기</button>
       <div style="flex:1"></div>
-      <button class="btn line" onclick="resetAll()">전체 초기화</button>
+      <button class="btn line" onclick="resetAll()">이 브라우저 초기화</button>
     </div>
   </div>
 </div>
@@ -592,6 +600,7 @@ function switchView(v){
   const bh=document.getElementById('bn-home'), bm=document.getElementById('bn-materials');
   if(bh) bh.classList.toggle('active', v==='home'||v==='detail');
   if(bm) bm.classList.toggle('active', v==='materials');
+  const gm=document.getElementById('guide-mini'); if(gm && v!=='detail') gm.classList.remove('show');
   window.scrollTo(0,0);
   if(v==='home') renderHome();
   if(v==='materials') renderMaterials();
@@ -747,6 +756,7 @@ function renderGuide(){
   const t=nextTask();
   document.getElementById('guide-text').textContent=t.text;
   document.getElementById('guide-btn').textContent=t.btn;
+  const gm=document.getElementById('guide-mini-text'); if(gm) gm.textContent=t.text;
   window.__guideAct=t.act;
   const hasCard=cardHasContent();
   const hasBeats=Object.values(p.beats).some(a=>a.length);
@@ -1290,7 +1300,7 @@ function renderFB(){
   const p=proj(); const el=document.getElementById('fb'); if(!el||!p) return;
   if(p.fbMode==='score' && p.fbItems && p.fbItems.length){
     el.innerHTML = p.fbItems.map((it,i)=>`
-      <div class="fbi"><b>${esc(it.name)} ${it.score}/20 · ${esc(it.verdict)}</b>
+      <div class="fbi"><b>${esc(it.name)} ${Number(it.score)||0}/20 · ${esc(it.verdict)}</b>
       <div>${esc(it.note)}</div>
       <div class="fbex">${esc(it.example||'')}<br><button class="mini" id="ex-${i}" onclick="runExample(${i})">예시 새로고침</button></div></div>`).join('')
       + `<div class="fbi"><b>◎ 가장 먼저 고칠 것</b><div>${esc(p.fbFix)}</div></div>`
@@ -1559,7 +1569,7 @@ function renderOnb(){
 function openSettings(){ document.getElementById('api-key-input').value=state.apiKey; document.getElementById('modal-settings').classList.remove('hidden'); }
 function closeSettings(){ document.getElementById('modal-settings').classList.add('hidden'); }
 function saveSettings(){ state.apiKey=document.getElementById('api-key-input').value.trim(); save(); closeSettings(); }
-function resetAll(){ if(confirm('모든 데이터가 지워져요. 백업을 먼저 받아두시는 게 좋아요. 계속할까요?')){ localStorage.removeItem(LS_KEY); location.reload(); } }
+function resetAll(){ if(confirm('이 브라우저에 저장된 데이터를 지우고, 계정에 저장된 내용을 다시 불러와요. 계속할까요?')){ localStorage.removeItem(LS_KEY); location.reload(); } }
 function exportJSON(){
   const a=document.createElement('a');
   a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(state,null,2));
@@ -1569,7 +1579,20 @@ function importJSON(){ document.getElementById('import-file').click(); }
 function doImport(f){
   if(!f) return;
   const r=new FileReader();
-  r.onload=()=>{ try{ state=JSON.parse(r.result); save(); switchView('home'); alert('복원했어요.'); }catch(e){ alert('파일을 읽을 수 없어요.'); } };
+  r.onload=async ()=>{
+    let b=null; try{ b=JSON.parse(r.result); }catch(e){ alert('파일을 읽을 수 없어요.'); return; }
+    const mats=Array.isArray(b.materials)?b.materials:[], projs=Array.isArray(b.projects)?b.projects:[];
+    if(!mats.length && !projs.length){ alert('파일에 재료나 기획안이 없어요.'); return; }
+    if(!confirm(`파일의 재료 ${mats.length}개, 기획안 ${projs.length}개를 지금 계정에 추가할까요? (기존 데이터는 그대로 두고 없는 것만 추가돼요)`)) return;
+    // 통째로 덮어쓰지 않고 병합: 계정 주인 표시와 기존 데이터를 보존
+    const del=deletedMap(); let added=0;
+    mats.forEach(m=>{ if(m&&m.id){ delete del[m.id]; if(!state.materials.find(x=>x.id===m.id)){ state.materials.unshift(m); added++; } } });
+    projs.forEach(pj=>{ if(pj&&pj.id){ delete del[pj.id]; if(!state.projects.find(x=>x.id===pj.id)){ state.projects.unshift(pj); added++; } } });
+    save();
+    if(supa&&supaUser) await cloudPush();
+    switchView('home');
+    alert(added ? added+'개를 추가했어요.' : '이미 있는 항목들이라 새로 추가된 건 없어요.');
+  };
   r.readAsText(f);
 }
 
@@ -1832,6 +1855,16 @@ if(/iPhone|iPad|iPod/.test(navigator.userAgent)){
 if(window.matchMedia && matchMedia('(pointer:coarse)').matches){
   const mi=document.getElementById('mat-input');
   if(mi) mi.placeholder='한 줄이면 충분해요';
+}
+// 상단의 '다음 할 일'이 화면에서 벗어나면, 하단에 미니 바로 계속 보여줌 (모바일)
+if('IntersectionObserver' in window){
+  const g=document.getElementById('guide');
+  if(g) new IntersectionObserver(es=>{
+    const last=es[es.length-1]; // 변경이 묶여 오면 마지막 상태 기준
+    const mini=document.getElementById('guide-mini');
+    const inDetail=!document.getElementById('view-detail').classList.contains('hidden');
+    if(mini) mini.classList.toggle('show', !last.isIntersecting && inDetail);
+  }).observe(g);
 }
 (async function boot(){
   if(SUPA_URL && SUPA_KEY && window.supabase){
