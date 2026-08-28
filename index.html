@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>(ploty)</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 :root{
   --bg:#f4f4f4;
@@ -222,6 +223,8 @@ header .util button:hover{color:var(--ink)}
   </nav>
   <div class="spacer"></div>
   <div class="util">
+    <span class="muted hidden" id="acct-name" style="font-size:0.8rem"></span>
+    <button class="hidden" id="acct-logout" onclick="cloudLogout()">로그아웃</button>
     <button onclick="startOnboarding()">길라잡이</button>
     <button onclick="exportJSON()">백업</button>
     <button onclick="importJSON()">복원</button>
@@ -350,6 +353,21 @@ header .util button:hover{color:var(--ink)}
   </div>
 </div>
 
+<!-- 로그인 모달 -->
+<div id="modal-auth" class="modal-bg hidden">
+  <div class="modal">
+    <h3>(ploty) 로그인</h3>
+    <p>아이디와 비밀번호로 로그인하세요. 처음이면 회원가입을 누르면 돼요.<br>기획안은 계정에 저장돼서 어느 기기에서든 이어서 쓸 수 있어요.</p>
+    <input id="auth-id" placeholder="아이디 (영문, 숫자 3~20자)" autocomplete="username">
+    <input id="auth-pw" type="password" placeholder="비밀번호 (6자 이상)" autocomplete="current-password" onkeydown="if(event.key==='Enter')cloudLogin()">
+    <div class="muted" id="auth-msg" style="margin-bottom:12px"></div>
+    <div class="row">
+      <button class="btn red" id="auth-login" onclick="cloudLogin()">로그인</button>
+      <button class="btn line" id="auth-signup" onclick="cloudSignup()">회원가입</button>
+    </div>
+  </div>
+</div>
+
 <!-- 길라잡이 모달 -->
 <div id="modal-onb" class="modal-bg hidden">
   <div class="modal onb">
@@ -422,14 +440,15 @@ function save(){
     localStorage.setItem(LS_KEY, JSON.stringify(state));
     const el=document.getElementById('save-ind');
     if(el){
-      el.textContent='✓ 자동 저장됨';
+      el.textContent = supaUser ? '저장 중…' : '✓ 자동 저장됨';
       clearTimeout(saveIndTimer);
-      saveIndTimer=setTimeout(()=>{ el.textContent=''; }, 1600);
+      if(!supaUser) saveIndTimer=setTimeout(()=>{ el.textContent=''; }, 1600);
     }
   }catch(e){
     const el=document.getElementById('save-ind');
     if(el) el.textContent='저장 실패, 백업을 받아두세요';
   }
+  cloudQueue();
 }
 function uid(){ return Math.random().toString(36).slice(2,10); }
 function proj(){ return state.projects.find(p=>p.id===state.activeProject) || null; }
@@ -1197,9 +1216,107 @@ function doImport(f){
   r.readAsText(f);
 }
 
+/* ============================================================
+   클라우드 계정·동기화 (Supabase)
+   아래 두 값을 채우면 아이디 로그인이 켜지고, 비우면 로컬 모드.
+============================================================ */
+const SUPA_URL='';   // 예: https://xxxx.supabase.co
+const SUPA_KEY='';   // anon public key
+const AUTH_DOMAIN='ploty.warmbread.app'; // 아이디를 내부 이메일로 변환할 때 사용
+let supa=null, supaUser=null, cloudTimer=null;
+
+function authMsg(t){ const el=document.getElementById('auth-msg'); if(el) el.textContent=t||''; }
+function idToEmail(id){ return id.toLowerCase()+'@'+AUTH_DOMAIN; }
+function validId(id){ return /^[a-zA-Z0-9_-]{3,20}$/.test(id); }
+
+async function cloudLogin(){
+  const id=document.getElementById('auth-id').value.trim();
+  const pw=document.getElementById('auth-pw').value;
+  if(!validId(id)){ authMsg('아이디는 영문·숫자 3~20자예요.'); return; }
+  if(pw.length<6){ authMsg('비밀번호는 6자 이상이에요.'); return; }
+  authMsg('로그인 중…');
+  const {data,error}=await supa.auth.signInWithPassword({email:idToEmail(id), password:pw});
+  if(error){ authMsg(/invalid/i.test(error.message)?'아이디 또는 비밀번호가 맞지 않아요.':'로그인 실패: '+error.message); return; }
+  await afterLogin(data.user, id);
+}
+async function cloudSignup(){
+  const id=document.getElementById('auth-id').value.trim();
+  const pw=document.getElementById('auth-pw').value;
+  if(!validId(id)){ authMsg('아이디는 영문·숫자 3~20자예요.'); return; }
+  if(pw.length<6){ authMsg('비밀번호는 6자 이상이에요.'); return; }
+  authMsg('가입 중…');
+  const {data,error}=await supa.auth.signUp({email:idToEmail(id), password:pw, options:{data:{ploty_id:id}}});
+  if(error){ authMsg(/already/i.test(error.message)?'이미 있는 아이디예요. 로그인을 눌러보세요.':'가입 실패: '+error.message); return; }
+  if(!data.session){ authMsg('가입은 됐는데 자동 로그인이 안 됐어요. 로그인을 눌러주세요.'); return; }
+  await afterLogin(data.user, id);
+}
+async function afterLogin(user, id){
+  supaUser=user;
+  document.getElementById('modal-auth').classList.add('hidden');
+  const nm=document.getElementById('acct-name'); nm.textContent=id||displayId(); nm.classList.remove('hidden');
+  document.getElementById('acct-logout').classList.remove('hidden');
+  await cloudPull();
+  switchView('home');
+  if(!state.onboarded) startOnboarding();
+}
+function displayId(){
+  if(!supaUser) return '';
+  return (supaUser.user_metadata&&supaUser.user_metadata.ploty_id) || (supaUser.email||'').split('@')[0];
+}
+async function cloudLogout(){
+  if(!confirm('로그아웃할까요? 기획안은 계정에 저장되어 있어 다시 로그인하면 그대로예요.')) return;
+  await supa.auth.signOut();
+  location.reload();
+}
+async function cloudPull(){
+  try{
+    const {data,error}=await supa.from('ploty_states').select('data').eq('user_id',supaUser.id).maybeSingle();
+    if(error) throw error;
+    if(data && data.data){
+      state.materials=data.data.materials||[];
+      state.projects=data.data.projects||[];
+      state.activeProject=null;
+      try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
+    } else if(state.projects.length||state.materials.length){
+      await cloudPush(); // 이 브라우저의 로컬 데이터를 계정 첫 데이터로 올림
+    }
+  }catch(e){
+    alert('클라우드에서 불러오지 못했어요: '+(e.message||e));
+  }
+}
+function cloudQueue(){
+  if(!supa||!supaUser) return;
+  clearTimeout(cloudTimer);
+  cloudTimer=setTimeout(cloudPush, 1200);
+}
+async function cloudPush(){
+  if(!supa||!supaUser) return;
+  const payload={materials:state.materials, projects:state.projects};
+  const {error}=await supa.from('ploty_states').upsert({user_id:supaUser.id, data:payload, updated_at:new Date().toISOString()});
+  const el=document.getElementById('save-ind');
+  if(el){
+    el.textContent = error ? '클라우드 저장 실패, 인터넷을 확인해주세요' : '✓ 계정에 저장됨';
+    clearTimeout(saveIndTimer);
+    if(!error) saveIndTimer=setTimeout(()=>{ el.textContent=''; }, 2000);
+  }
+}
+
 /* 시작 */
-switchView('home');
-if(!state.onboarded) startOnboarding();
+(async function boot(){
+  if(SUPA_URL && SUPA_KEY && window.supabase){
+    supa=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+    const {data}=await supa.auth.getSession();
+    if(data && data.session){
+      await afterLogin(data.session.user, null);
+      return;
+    }
+    switchView('home');
+    document.getElementById('modal-auth').classList.remove('hidden');
+    return;
+  }
+  switchView('home');
+  if(!state.onboarded) startOnboarding();
+})();
 </script>
 </body>
 </html>
