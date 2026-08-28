@@ -225,7 +225,7 @@ body.auth-locked header .util .hidden{display:none}
   </nav>
   <div class="spacer"></div>
   <div class="util">
-    <span class="muted hidden" id="acct-name" style="font-size:0.8rem"></span>
+    <button class="hidden" id="acct-name" style="font-size:0.8rem;font-weight:700" onclick="openMyPage()" title="마이페이지"></button>
     <button class="hidden" id="acct-logout" onclick="cloudLogout()">로그아웃</button>
     <button onclick="startOnboarding()">길라잡이</button>
     <button onclick="exportJSON()">백업</button>
@@ -351,6 +351,24 @@ body.auth-locked header .util .hidden{display:none}
       <button class="btn line" onclick="closeSettings()">닫기</button>
       <div style="flex:1"></div>
       <button class="btn line" onclick="resetAll()">전체 초기화</button>
+    </div>
+  </div>
+</div>
+
+<!-- 마이페이지 모달 -->
+<div id="modal-mypage" class="modal-bg hidden" onclick="if(event.target===this)closeMyPage()">
+  <div class="modal">
+    <h3>마이페이지</h3>
+    <p>아이디: <b id="my-id"></b></p>
+    <p style="margin-bottom:6px">비밀번호 변경</p>
+    <input id="my-pw" type="password" placeholder="새 비밀번호 (6자 이상)" autocomplete="new-password">
+    <input id="my-pw2" type="password" placeholder="새 비밀번호 한 번 더" autocomplete="new-password" onkeydown="if(event.key==='Enter')changePw()">
+    <div class="muted" id="my-msg" style="margin-bottom:12px"></div>
+    <div class="row">
+      <button class="btn red" id="my-change" onclick="changePw()">비밀번호 변경</button>
+      <button class="btn line" onclick="closeMyPage()">닫기</button>
+      <div style="flex:1"></div>
+      <button class="btn line" onclick="closeMyPage();cloudLogout()">로그아웃</button>
     </div>
   </div>
 </div>
@@ -1288,6 +1306,24 @@ async function afterLogin(user, id){
 function displayId(){
   if(!supaUser) return '';
   return (supaUser.user_metadata&&supaUser.user_metadata.ploty_id) || (supaUser.email||'').split('@')[0];
+}
+function openMyPage(){
+  document.getElementById('my-id').textContent=displayId();
+  document.getElementById('my-pw').value=''; document.getElementById('my-pw2').value='';
+  document.getElementById('my-msg').textContent='';
+  document.getElementById('modal-mypage').classList.remove('hidden');
+}
+function closeMyPage(){ document.getElementById('modal-mypage').classList.add('hidden'); }
+async function changePw(){
+  const pw=document.getElementById('my-pw').value, pw2=document.getElementById('my-pw2').value;
+  const msg=document.getElementById('my-msg');
+  if(pw.length<6){ msg.textContent='비밀번호는 6자 이상이에요.'; return; }
+  if(pw!==pw2){ msg.textContent='비밀번호가 서로 달라요.'; return; }
+  msg.textContent='변경 중…';
+  const {error}=await supa.auth.updateUser({password:pw});
+  if(error){ msg.textContent=/same/i.test(error.message)?'지금 쓰는 비밀번호와 같아요.':'변경 실패: '+error.message; return; }
+  msg.textContent='변경했어요. 다음 로그인부터 새 비밀번호를 쓰면 돼요.';
+  document.getElementById('my-pw').value=''; document.getElementById('my-pw2').value='';
 }
 async function cloudLogout(){
   if(!confirm('로그아웃할까요? 기획안은 계정에 저장되어 있어 다시 로그인하면 그대로예요.')) return;
