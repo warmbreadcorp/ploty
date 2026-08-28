@@ -26,7 +26,8 @@
   --dark-card:#2e2e2e;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--ink);font-family:"Pretendard Variable",Pretendard,-apple-system,sans-serif;line-height:1.55;font-size:15px}
+html,body{overflow-x:hidden} /* 페이지가 가로로 밀리지 않게 */
+body{background:var(--bg);color:var(--ink);font-family:"Pretendard Variable",Pretendard,-apple-system,sans-serif;line-height:1.55;font-size:15px;word-break:keep-all;overflow-wrap:anywhere}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 textarea,input,select{font-family:inherit;font-size:0.95rem;color:var(--ink)}
 ::placeholder{color:var(--ink-30)}
