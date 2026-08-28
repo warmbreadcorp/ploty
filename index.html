@@ -41,6 +41,7 @@ header nav button.active{color:var(--ink);border-bottom-color:var(--red)}
 header .spacer{flex:1}
 header .util{display:flex;gap:16px}
 header .util button{font-size:0.8rem;font-weight:500;color:var(--ink-60)}
+#acct-name{font-weight:700}
 header .util button:hover{color:var(--ink)}
 
 .wrap{max-width:1240px;margin:0 auto;padding:34px 26px 140px}
@@ -116,7 +117,10 @@ body.auth-locked header .util .hidden{display:none}
 .guide{background:var(--paper);border:1px solid var(--ink);padding:11px 16px;display:flex;align-items:center;gap:10px;margin-bottom:22px;font-size:0.9rem;flex-wrap:wrap}
 .guide .glabel{font-weight:700;font-size:0.78rem;letter-spacing:0.04em;color:var(--red)}
 .step.next{border-left:3px solid var(--red)}
-.plan-grid{display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start}
+.plan-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start}
+.plan-grid>*{min-width:0}
+.step textarea{max-width:100%}
+.chain .crow input{min-width:0}
 @media(max-width:980px){.plan-grid{grid-template-columns:1fr}}
 .step{background:var(--paper);border:1px solid var(--rule);padding:18px 20px;margin-bottom:10px}
 .step .head{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
@@ -129,7 +133,7 @@ body.auth-locked header .util .hidden{display:none}
 .step textarea:focus{outline:2px solid var(--ink)}
 .step .tools{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
 .benefit-types{display:flex;gap:6px}
-.benefit-types button{font-size:0.74rem;font-weight:500;padding:4px 11px;border:1.5px solid var(--rule);color:var(--ink-60)}
+.benefit-types button{font-size:0.74rem;font-weight:500;padding:4px 11px;border:1.5px solid var(--rule);color:var(--ink-60);white-space:nowrap}
 .benefit-types button.on{background:var(--ink);border-color:var(--ink);color:#fff}
 .chain{display:flex;flex-direction:column;gap:5px}
 .chain .seed{background:#f5f5f5;padding:10px 13px;font-size:0.9rem;color:var(--ink-60)}
@@ -225,31 +229,47 @@ body.auth-locked header .util .hidden{display:none}
 
 /* ---------- 모바일 ---------- */
 @media(max-width:680px){
-  header{flex-wrap:wrap;height:auto;padding:10px 14px;gap:8px 14px}
-  header nav{gap:12px}
-  header .util{gap:12px;flex-wrap:wrap}
+  /* 입력칸 글자가 16px보다 작으면 아이폰이 탭할 때 화면을 강제로 확대함. 전부 16px로 고정 */
+  textarea,input,select{font-size:16px}
+  button,input,textarea,select{touch-action:manipulation}
+  header{flex-wrap:wrap;height:auto;padding:10px 14px;gap:4px 14px}
+  header nav{gap:14px}
+  header nav button{padding:8px 0;font-size:1rem}
+  header .util{gap:6px;flex-wrap:wrap}
+  header .util button{font-size:0.85rem;padding:8px 5px}
+  header .util .m-hide{display:none} /* 자주 안 쓰는 것들은 마이페이지 안으로 */
   .wrap{padding:18px 14px 90px}
   .section-title{font-size:1.2rem}
   .section-sub{font-size:0.82rem}
   .home-top{flex-direction:column;border-bottom:none}
-  .home-top input{border-bottom:1px solid var(--ink);font-size:1rem;padding:12px 2px;width:100%}
+  .home-top input{border-bottom:1px solid var(--ink);padding:12px 2px;width:100%}
   .home-top .btn{align-self:flex-end;margin:10px 0 0}
+  .btn{padding:12px 20px}
+  .btn.sm{padding:10px 14px;font-size:0.82rem}
   .addbox{flex-direction:column}
   .addbox .col{flex-direction:row;justify-content:flex-end;align-items:center}
+  .mat .foot button{font-size:0.85rem;padding:9px 6px}
+  .pcard .del{font-size:0.85rem;padding:9px 6px}
   .projbar{gap:10px;padding-bottom:10px}
   .projbar input.title{font-size:1.15rem;min-width:100px}
   .guide{font-size:0.84rem;padding:10px 12px}
   .plan-grid{gap:16px}
   .ai-panel{position:static;max-height:none}
+  .benefit-types button{font-size:0.82rem;padding:9px 14px}
+  .chain .cx{padding:10px 12px;font-size:1rem}
+  .chain .arrow{padding:8px 0 8px 13px}
+  .chain .addwhy{padding:10px 16px;font-size:0.85rem}
   .board{flex-direction:column}
   .lane{min-width:0}
   .board-head{gap:8px}
   .board-head .btn{flex:1;padding:10px 6px}
   .tmpl-pick{width:100%;display:flex}
-  .tmpl-pick button{flex:1;padding:10px 4px;font-size:0.74rem}
+  .tmpl-pick button{flex:1;padding:12px 4px;font-size:0.78rem}
   .step{padding:14px}
   .modal{padding:24px 18px}
-  .beat{cursor:default}
+  .beat{cursor:default;padding-right:104px}
+  .beat .bicons{gap:13px;top:9px}
+  .beat .bicons span{font-size:0.95rem;padding:2px}
   .script-head{gap:8px}
 }
 /* ---------- 길라잡이 ---------- */
@@ -273,11 +293,11 @@ body.auth-locked header .util .hidden{display:none}
   </nav>
   <div class="spacer"></div>
   <div class="util">
-    <button class="hidden" id="acct-name" style="font-size:0.8rem;font-weight:700" onclick="openMyPage()" title="마이페이지"></button>
-    <button class="hidden" id="acct-logout" onclick="cloudLogout()">로그아웃</button>
+    <button class="hidden" id="acct-name" onclick="openMyPage()" title="마이페이지"></button>
+    <button class="hidden m-hide" id="acct-logout" onclick="cloudLogout()">로그아웃</button>
     <button onclick="startOnboarding()">길라잡이</button>
-    <button onclick="exportJSON()">백업</button>
-    <button onclick="importJSON()">복원</button>
+    <button class="m-hide" onclick="exportJSON()">백업</button>
+    <button class="m-hide" onclick="importJSON()">복원</button>
     <button onclick="openSettings()">설정</button>
   </div>
 </header>
@@ -363,7 +383,7 @@ body.auth-locked header .util .hidden{display:none}
     <div class="board-head">
       <div class="sect" style="margin:0">
         <div class="section-title">플롯</div>
-        <div class="section-sub">기획을 장면 카드로 쪼개서 순서대로 놓는 곳이에요. 카드를 드래그해서 순서를 바꿔보세요. 더블클릭하면 수정돼요.</div>
+        <div class="section-sub" id="board-sub">기획을 장면 카드로 쪼개서 순서대로 놓는 곳이에요. 카드를 드래그해서 순서를 바꿔보세요. 더블클릭하면 수정돼요.</div>
       </div>
       <div style="flex:1"></div>
       <button class="btn" id="btn-structgen" onclick="runStructGen()">플롯 초안 만들기</button>
@@ -416,6 +436,10 @@ body.auth-locked header .util .hidden{display:none}
     <div class="muted" id="my-msg" style="margin-bottom:12px"></div>
     <p style="margin-top:14px;margin-bottom:6px">이 브라우저에 보관된 백업</p>
     <div class="muted" id="my-backups" style="margin-bottom:12px"></div>
+    <div class="row" style="margin-bottom:12px">
+      <button class="btn line" onclick="exportJSON()">파일로 백업</button>
+      <button class="btn line" onclick="importJSON()">파일에서 복원</button>
+    </div>
     <div class="row">
       <button class="btn red" id="my-change" onclick="changePw()">비밀번호 변경</button>
       <button class="btn line" onclick="closeMyPage()">닫기</button>
@@ -1731,6 +1755,13 @@ async function cloudPush(){
 }
 
 /* 시작 */
+// 터치 기기에는 키보드·마우스 안내가 의미 없어서 문구를 바꿔줌
+if(window.matchMedia && matchMedia('(pointer:coarse)').matches){
+  const mi=document.getElementById('mat-input');
+  if(mi) mi.placeholder='한 줄이면 충분해요';
+  const bs=document.getElementById('board-sub');
+  if(bs) bs.textContent='기획을 장면 카드로 쪼개서 순서대로 놓는 곳이에요. 카드의 화살표로 순서를 바꾸고, 연필을 누르면 수정돼요.';
+}
 (async function boot(){
   if(SUPA_URL && SUPA_KEY && window.supabase){
     supa=window.supabase.createClient(SUPA_URL,SUPA_KEY);
