@@ -49,9 +49,10 @@ header .util button:hover{color:var(--ink)}
 /* ---------- 공통 ---------- */
 .kicker{font-size:0.68rem;font-weight:900;letter-spacing:0.18em;color:var(--ink-30);text-transform:uppercase;margin-bottom:6px}
 .section-title{font-weight:800;font-size:1.5rem;letter-spacing:-0.03em;line-height:1.2}
+#view-detail .section-title{font-size:1.28rem} /* 문서 제목보다 한 단계 아래 */
 .section-sub{color:var(--ink-60);font-size:0.86rem;margin-top:6px}
 .sect{margin-bottom:14px}
-.btn{background:var(--ink);color:#fff;padding:10px 18px;border-radius:2px;font-weight:600;font-size:0.85rem}
+.btn{background:var(--ink);color:#fff;padding:10px 18px;border-radius:8px;font-weight:600;font-size:0.85rem}
 .btn:hover{background:#333333}
 .btn.red{background:var(--red)}
 .btn.red:hover{background:#e0122f}
@@ -59,7 +60,7 @@ header .util button:hover{color:var(--ink)}
 .btn.line:hover{background:var(--ink);color:#fff}
 .btn.sm{padding:6px 12px;font-size:0.78rem}
 .btn:disabled{opacity:0.4;cursor:default}
-.tag{display:inline-block;font-size:0.68rem;font-weight:600;padding:3px 8px;letter-spacing:0.06em}
+.tag{display:inline-block;font-size:0.68rem;font-weight:600;padding:3px 9px;letter-spacing:0.06em;border-radius:999px}
 .tag.internal{background:var(--ink);color:#fff}
 .tag.external{border:1.5px solid var(--ink);color:var(--ink)}
 .tag.beta{background:var(--red);color:#fff}
@@ -80,7 +81,7 @@ body.auth-locked header .util .hidden{display:none}
 .home-top input:focus{outline:none}
 .home-top .btn{align-self:center;margin-bottom:10px}
 .proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
-.pcard{background:var(--paper);border:1px solid var(--rule);padding:20px;cursor:pointer;display:flex;flex-direction:column;gap:10px;transition:border-color .12s}
+.pcard{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:20px;cursor:pointer;display:flex;flex-direction:column;gap:10px;transition:border-color .12s}
 .pcard:hover{border-color:var(--ink)}
 .pcard .ptitle{font-weight:700;font-size:1.05rem;letter-spacing:-0.02em}
 .pcard .pstart{font-size:0.86rem;color:var(--ink-60);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -89,6 +90,7 @@ body.auth-locked header .util .hidden{display:none}
 .pcard .prog i{display:block;height:100%;background:var(--ink)}
 .pcard .pfoot{display:flex;align-items:center;justify-content:space-between}
 .pcard .noscore{font-size:0.76rem;color:var(--ink-30);font-weight:500}
+.pcard .pmeta{font-size:0.76rem;color:var(--ink-60);white-space:nowrap}
 .pcard .del{color:var(--ink-30);font-size:0.78rem;font-weight:500}
 .pcard .del:hover{color:var(--red)}
 
@@ -97,9 +99,12 @@ body.auth-locked header .util .hidden{display:none}
 .addbox textarea{flex:1;border:none;border-bottom:1px solid var(--ink);background:none;padding:12px 4px;resize:none;overflow:hidden;min-height:54px;font-size:1.05rem}
 .addbox textarea:focus{outline:none;border-bottom-color:var(--red)}
 .addbox .col{display:flex;flex-direction:column;gap:8px;justify-content:flex-end}
-.addbox select{padding:9px 10px;border:1px solid var(--ink);border-radius:2px;background:var(--paper);font-weight:500;font-size:0.82rem}
-.mat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-.mat{background:var(--paper);border:1px solid var(--rule);padding:16px;display:flex;flex-direction:column;gap:10px}
+.addbox select{padding:9px 10px;border:1px solid var(--ink);border-radius:8px;background:var(--paper);font-weight:500;font-size:0.82rem}
+.mat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;align-items:start}
+.mat.clamp p{display:-webkit-box;-webkit-line-clamp:7;-webkit-box-orient:vertical;overflow:hidden}
+.mat .more{align-self:flex-start;font-size:0.78rem;font-weight:500;color:var(--ink-60);border-bottom:1px solid var(--ink-30);padding:0}
+.mat .more:hover{color:var(--ink)}
+.mat{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px}
 .mat p{white-space:pre-wrap;font-size:0.93rem}
 .mat .foot{display:flex;align-items:center;gap:10px;margin-top:auto}
 .mat .foot .muted{flex:1}
@@ -114,47 +119,48 @@ body.auth-locked header .util .hidden{display:none}
 .projbar input.title:focus{outline:none}
 .score-badge{display:flex;align-items:center;gap:8px;font-size:0.95rem}
 
-.guide{background:var(--paper);border:1px solid var(--ink);padding:11px 16px;display:flex;align-items:center;gap:10px;margin-bottom:22px;font-size:0.9rem;flex-wrap:wrap}
+.guide{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:22px;font-size:0.9rem;flex-wrap:wrap}
 .guide .glabel{font-weight:700;font-size:0.78rem;letter-spacing:0.04em;color:var(--red)}
-.step.next{border-left:3px solid var(--red)}
+.step.next{border-color:var(--red)}
 .plan-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start}
 .plan-grid>*{min-width:0}
 .step textarea{max-width:100%}
 .chain .crow input{min-width:0}
 @media(max-width:980px){.plan-grid{grid-template-columns:1fr}}
-.step{background:var(--paper);border:1px solid var(--rule);padding:18px 20px;margin-bottom:10px}
+.step{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:18px 20px;margin-bottom:10px}
 .step .head{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
 .step .num{font-weight:700;color:var(--ink-30);font-size:0.72rem;letter-spacing:0.12em}
 .step .name{font-weight:700;font-size:1rem;letter-spacing:-0.01em}
 .step .check{margin-left:auto;font-size:0.8rem;color:#d9d9d9;font-weight:600}
 .step.filled .check{color:var(--ink)}
 .step .desc{color:var(--ink-60);font-size:0.8rem;margin-bottom:10px}
-.step textarea{width:100%;border:none;background:#f5f5f5;padding:12px 13px;min-height:58px;resize:none;overflow:hidden}
+.step textarea{width:100%;border:none;border-radius:8px;background:#f5f5f5;padding:12px 13px;min-height:58px;resize:none;overflow:hidden}
 .step textarea:focus{outline:2px solid var(--ink)}
 .step .tools{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
 .benefit-types{display:flex;gap:6px}
-.benefit-types button{font-size:0.74rem;font-weight:500;padding:4px 11px;border:1.5px solid var(--rule);color:var(--ink-60);white-space:nowrap}
+.benefit-types button{font-size:0.74rem;font-weight:500;padding:5px 13px;border:1.5px solid var(--rule);border-radius:999px;color:var(--ink-60);white-space:nowrap}
 .benefit-types button.on{background:var(--ink);border-color:var(--ink);color:#fff}
 .chain{display:flex;flex-direction:column;gap:5px}
-.chain .seed{background:#f5f5f5;padding:10px 13px;font-size:0.9rem;color:var(--ink-60)}
+.chain .seed{background:#f5f5f5;border-radius:8px;padding:10px 13px;font-size:0.9rem;color:var(--ink-60)}
 .chain .arrow{font-size:0.74rem;color:var(--ink-30);padding:2px 0 2px 13px;text-align:left;align-self:flex-start;cursor:pointer}
 .chain .arrow:hover{color:var(--ink)}
 .chain .arrow b{color:var(--red);font-weight:600}
 .chain .crow{display:flex;gap:6px;align-items:center}
-.chain .crow input{flex:1;border:none;background:#f5f5f5;padding:10px 13px}
+.chain .crow input{flex:1;border:none;border-radius:8px;background:#f5f5f5;padding:10px 13px}
 .chain .crow input:focus{outline:2px solid var(--ink)}
 .chain .crow.last input{background:#fff;border:1px solid var(--ink)}
 .chain .cx{color:var(--ink-30);font-size:0.8rem;padding:4px}
 .chain .cx:hover{color:var(--red)}
-.chain .addwhy{align-self:flex-start;border:1px dashed var(--ink-30);padding:6px 12px;font-size:0.78rem;color:var(--ink-60);margin-top:2px}
+.chain .addwhy{align-self:flex-start;background:#efefef;border:none;border-radius:999px;padding:7px 14px;font-size:0.78rem;color:var(--ink-60);margin-top:2px}
+.chain .addwhy:hover{background:#e6e6e6;color:var(--ink)}
 .chain .addwhy:hover{border-color:var(--ink);color:var(--ink)}
 .cands{margin-top:10px;display:flex;flex-direction:column;gap:6px}
-.cand{background:#fff;border:1px dashed var(--ink-30);padding:10px 13px;font-size:0.88rem;cursor:pointer}
+.cand{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:10px 13px;font-size:0.88rem;cursor:pointer}
 .cand:hover{border-color:var(--ink);border-style:solid}
 .cand small{display:block;color:var(--ink-30);margin-top:2px}
 
 /* AI 패널 */
-.ai-panel{position:sticky;top:80px;background:var(--ink);color:#e6e6e6;padding:20px;max-height:calc(100vh - 110px);overflow:auto}
+.ai-panel{position:sticky;top:80px;background:var(--ink);color:#e6e6e6;border-radius:14px;padding:20px;max-height:calc(100vh - 110px);overflow:auto}
 .ai-panel .kicker{color:#9c9c9c}
 .ai-panel h3{font-size:1.05rem;font-weight:700;color:#fff;letter-spacing:-0.02em}
 .ai-panel .muted{color:#9c9c9c;font-size:0.8rem}
@@ -175,7 +181,7 @@ body.auth-locked header .util .hidden{display:none}
 @keyframes sp{to{transform:rotate(360deg)}}
 
 /* ---------- 구조 보드 ---------- */
-.board-head{display:flex;align-items:flex-end;gap:14px;margin:46px 0 4px;flex-wrap:wrap}
+.board-head{display:flex;align-items:flex-end;gap:14px;margin:44px 0 4px;padding-top:32px;border-top:1px solid var(--rule);flex-wrap:wrap}
 .tmpl-row{display:flex;align-items:center;gap:16px;margin-top:20px;border-bottom:1px solid var(--rule)}
 .tmpl-label{font-size:0.7rem;font-weight:700;letter-spacing:0.1em;color:var(--ink-30);padding-bottom:2px}
 .tmpl-pick{display:flex;gap:20px}
@@ -183,31 +189,31 @@ body.auth-locked header .util .hidden{display:none}
 .tmpl-pick button.on{color:var(--ink);border-bottom-color:var(--red)}
 .board{display:flex;flex-wrap:wrap;gap:10px;padding:16px 0 10px;align-items:stretch}
 .board>.bhint{width:100%;color:var(--ink-30);font-size:0.85rem;padding-bottom:6px}
-.lane{min-width:230px;flex:1;background:var(--paper);border:1px solid var(--rule);display:flex;flex-direction:column;gap:9px;padding:0 10px 10px}
+.lane{min-width:230px;flex:1;background:var(--paper);border:1px solid var(--rule);border-radius:12px;display:flex;flex-direction:column;gap:9px;padding:0 10px 10px}
 .lane.dragover{border-color:var(--red)}
-.lane .lhead{background:var(--ink);color:#fff;margin:0 -10px 2px;padding:9px 12px}
+.lane .lhead{border-bottom:1px solid var(--ink);margin:0 2px 2px;padding:11px 2px 9px}
 .lane .lhead .ltitle{font-weight:700;font-size:0.85rem;display:flex;justify-content:space-between;align-items:baseline;letter-spacing:0.02em}
-.lane .lhead .ltime{color:#a3a3a3;font-size:0.72rem;font-weight:600}
+.lane .lhead .ltime{color:var(--ink-30);font-size:0.72rem;font-weight:600}
 .lane .lhint{font-size:0.74rem;color:var(--ink-30);padding:0 2px}
-.beat{background:var(--dark-card);color:#fff;padding:11px 76px 11px 12px;font-size:0.87rem;cursor:grab;position:relative;line-height:1.5}
+.beat{background:var(--dark-card);color:#fff;border-radius:8px;padding:11px 76px 11px 12px;font-size:0.87rem;cursor:grab;position:relative;line-height:1.5}
 .beat.dragging{opacity:0.4}
 .beat .bicons{position:absolute;top:7px;right:9px;display:flex;gap:9px}
 .beat .bicons span{color:#ffffff44;font-size:0.74rem;font-weight:600;cursor:pointer}
 .beat .bicons span:hover{color:#fff}
 .beat .bnote{margin-top:7px;padding-top:6px;border-top:1px dashed #ffffff2e;color:#c9c9c9;font-size:0.77rem;line-height:1.5}
-.beat .bnote-input{width:100%;margin-top:7px;background:#ffffff14;border:1px solid #ffffff30;color:#fff;padding:6px 8px;font-size:0.78rem}
+.beat .bnote-input{width:100%;margin-top:7px;background:#ffffff14;border:1px solid #ffffff30;border-radius:6px;color:#fff;padding:6px 8px;font-size:0.78rem}
 .beat .bnote-input:focus{outline:none;border-color:#ffffff70}
 .beat .bnote-input::placeholder{color:#ffffff55}
 .beat[contenteditable="true"]{outline:2px solid var(--red);cursor:text}
-.lane .addbeat{border:1px dashed var(--ink-30);padding:8px;color:var(--ink-30);font-size:0.78rem;font-weight:500;text-align:center}
-.lane .addbeat:hover{border-color:var(--ink);color:var(--ink)}
-.lane .beat-input{border:1.5px solid var(--ink);padding:9px 11px;font-size:0.87rem;width:100%}
+.lane .addbeat{background:#efefef;border:none;border-radius:8px;padding:9px;color:var(--ink-60);font-size:0.78rem;font-weight:500;text-align:center}
+.lane .addbeat:hover{background:#e6e6e6;color:var(--ink)}
+.lane .beat-input{border:1.5px solid var(--ink);border-radius:8px;padding:9px 11px;font-size:0.87rem;width:100%}
 .lane .beat-input:focus{outline:none}
 
 /* ---------- 대본 ---------- */
-.script-head{display:flex;align-items:flex-end;gap:14px;margin:46px 0 14px;flex-wrap:wrap}
+.script-head{display:flex;align-items:flex-end;gap:14px;margin:44px 0 14px;padding-top:32px;border-top:1px solid var(--rule);flex-wrap:wrap}
 .ver-tabs{display:flex;gap:0;flex-wrap:wrap}
-.ver-tabs button{padding:8px 14px;border:1px solid var(--ink);background:none;font-weight:500;font-size:0.8rem;color:var(--ink-60)}
+.ver-tabs button{padding:8px 14px;border:1px solid var(--rule);border-radius:8px;background:none;font-weight:500;font-size:0.8rem;color:var(--ink-60)}
 .ver-tabs button+button{border-left:none}
 .ver-tabs button.on{background:var(--ink);color:#fff}
 .ver-tabs button .del{margin-left:7px;opacity:0.5}
@@ -216,12 +222,12 @@ body.auth-locked header .util .hidden{display:none}
 .script-group .gd{font-size:0.76rem;color:var(--ink-60);margin:2px 0 12px}
 .sline{display:flex;gap:10px;align-items:center;margin-bottom:6px}
 .sline .n{width:22px;text-align:right;font-size:0.72rem;font-weight:500;color:var(--ink-30)}
-.sline input{flex:1;border:none;background:#f5f5f5;padding:9px 12px}
+.sline input{flex:1;border:none;border-radius:8px;background:#f5f5f5;padding:9px 12px}
 .sline input:focus{outline:2px solid var(--ink)}
 
 /* ---------- 모달 ---------- */
 .modal-bg{position:fixed;inset:0;background:#111111d9;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
-.modal{background:var(--bg);padding:34px;max-width:520px;width:100%;max-height:88vh;overflow:auto;border-top:2px solid var(--ink)}
+.modal{background:var(--bg);padding:34px;max-width:520px;width:100%;max-height:88vh;overflow:auto;border-radius:14px}
 .modal h3{font-weight:800;font-size:1.35rem;letter-spacing:-0.03em;margin-bottom:10px}
 .modal p{font-size:0.88rem;color:var(--ink-60);margin-bottom:16px}
 .modal input{width:100%;border:none;border-bottom:1px solid var(--ink);background:none;padding:10px 2px;margin-bottom:18px;font-size:1rem}
@@ -347,7 +353,7 @@ body.auth-locked header .util .hidden{display:none}
       <input class="title" id="detail-title" oninput="onTitle(this.value)">
       <span class="muted" id="save-ind" style="font-size:0.76rem"></span>
       <button class="btn line sm" onclick="exportPDF()">PDF 내보내기</button>
-      <div class="score-badge" id="detail-score"></div>
+      <div class="score-badge" id="detail-score" onclick="document.querySelector('.ai-panel').scrollIntoView({behavior:'smooth',block:'center'})" style="cursor:pointer" title="AI 코치로 이동"></div>
     </div>
 
     <div class="guide" id="guide">
@@ -606,7 +612,7 @@ function renderHome(){
     <div class="pcard" onclick="openProject('${p.id}')">
       <div class="ptitle">${esc(p.title)}</div>
       <div class="pstart">${esc(p.card.start||'시작점이 아직 비어 있어요')}</div>
-      <div class="prow"><div class="prog"><i style="width:${prog}%"></i></div><span class="muted">${prog}%</span></div>
+      <div class="prow"><div class="prog"><i style="width:${prog}%"></i></div><span class="pmeta">기획 카드 ${STEP_DEFS.filter(s=>(p.card[s.key]||'').trim()).length}/${STEP_DEFS.length}</span></div>
       <div class="pfoot">
         ${sc!=null?`<span>${starsHTML(sc)} <span class="score-num">${sc}</span><span class="muted">/100</span>${p.scoreStale?' <span class="muted">수정됨</span>':''}</span>`:'<span class="noscore">채점 전</span>'}
         <span>${p.label?`<span class="tag lbl">${esc(p.label)}</span>`:''}
@@ -632,6 +638,11 @@ function delMaterial(id){
   markDeleted(id);
   state.materials=state.materials.filter(m=>m.id!==id); save(); renderMaterials();
 }
+function matToggle(id, btn){
+  const el=document.getElementById('mat-'+id); if(!el) return;
+  const open=el.classList.toggle('clamp');
+  if(btn) btn.textContent = open ? '펼쳐 보기' : '접기';
+}
 function materialToProject(id){
   const m=state.materials.find(x=>x.id===id); if(!m) return;
   createProject(m.text.length>20?m.text.slice(0,20)+'…':m.text, m.text);
@@ -641,9 +652,10 @@ function renderMaterials(){
   const g=document.getElementById('mat-grid');
   if(!state.materials.length){ g.innerHTML='<div class="empty-hint">아직 주운 재료가 없어요.<br>스치는 생각을 <b>한 줄씩</b> 던져두세요.</div>'; return; }
   g.innerHTML = state.materials.map(m=>`
-    <div class="mat">
+    <div class="mat ${m.text.length>220?'clamp':''}" id="mat-${m.id}">
       <span class="tag ${m.type}" style="align-self:flex-start">${m.type==='internal'?'내 생각·고민':'사람·사물'}</span>
       <p>${esc(m.text)}</p>
+      ${m.text.length>220?`<button class="more" onclick="matToggle('${m.id}',this)">펼쳐 보기</button>`:''}
       <div class="foot">
         <span class="muted">${new Date(m.createdAt).toLocaleDateString('ko-KR')}</span>
         <button onclick="materialToProject('${m.id}')">기획 시작 →</button>
@@ -764,7 +776,7 @@ function renderSteps(){
         ${benefitTypes}
         <div style="flex:1"></div>
         <button class="btn line sm" id="ref-${s.key}" onclick="runRefine('${s.key}')" ${val.trim()?'':'disabled'}>다듬기</button>
-        <button class="btn line sm" id="sug-${s.key}" onclick="runSuggest('${s.key}')">AI 추천받기</button>
+        <button class="btn sm" id="sug-${s.key}" onclick="runSuggest('${s.key}')">AI 추천받기</button>
       </div>
       <div class="cands" id="cands-${s.key}"></div>
     </div>`;
