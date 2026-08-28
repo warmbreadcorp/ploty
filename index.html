@@ -94,7 +94,7 @@ body.auth-locked header .util .hidden{display:none}
 
 /* ---------- 재료함 ---------- */
 .addbox{display:flex;gap:12px;margin:26px 0 30px}
-.addbox textarea{flex:1;border:none;border-bottom:1px solid var(--ink);background:none;padding:12px 4px;resize:vertical;min-height:54px;font-size:1.05rem}
+.addbox textarea{flex:1;border:none;border-bottom:1px solid var(--ink);background:none;padding:12px 4px;resize:none;overflow:hidden;min-height:54px;font-size:1.05rem}
 .addbox textarea:focus{outline:none;border-bottom-color:var(--red)}
 .addbox .col{display:flex;flex-direction:column;gap:8px;justify-content:flex-end}
 .addbox select{padding:9px 10px;border:1px solid var(--ink);border-radius:2px;background:var(--paper);font-weight:500;font-size:0.82rem}
@@ -129,7 +129,7 @@ body.auth-locked header .util .hidden{display:none}
 .step .check{margin-left:auto;font-size:0.8rem;color:#d9d9d9;font-weight:600}
 .step.filled .check{color:var(--ink)}
 .step .desc{color:var(--ink-60);font-size:0.8rem;margin-bottom:10px}
-.step textarea{width:100%;border:none;background:#f5f5f5;padding:12px 13px;min-height:58px;resize:vertical}
+.step textarea{width:100%;border:none;background:#f5f5f5;padding:12px 13px;min-height:58px;resize:none;overflow:hidden}
 .step textarea:focus{outline:2px solid var(--ink)}
 .step .tools{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
 .benefit-types{display:flex;gap:6px}
@@ -176,10 +176,11 @@ body.auth-locked header .util .hidden{display:none}
 
 /* ---------- 구조 보드 ---------- */
 .board-head{display:flex;align-items:flex-end;gap:14px;margin:46px 0 4px;flex-wrap:wrap}
-.tmpl-pick{display:flex;gap:0}
-.tmpl-pick button{padding:9px 16px;border:1px solid var(--ink);font-weight:500;font-size:0.8rem;background:none;color:var(--ink-60)}
-.tmpl-pick button+button{border-left:none}
-.tmpl-pick button.on{background:var(--ink);color:#fff}
+.tmpl-row{display:flex;align-items:center;gap:16px;margin-top:20px;border-bottom:1px solid var(--rule)}
+.tmpl-label{font-size:0.7rem;font-weight:700;letter-spacing:0.1em;color:var(--ink-30);padding-bottom:2px}
+.tmpl-pick{display:flex;gap:20px}
+.tmpl-pick button{padding:8px 2px;border:none;background:none;font-weight:600;font-size:0.85rem;color:var(--ink-30);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tmpl-pick button.on{color:var(--ink);border-bottom-color:var(--red)}
 .board{display:flex;flex-wrap:wrap;gap:10px;padding:16px 0 10px;align-items:stretch}
 .board>.bhint{width:100%;color:var(--ink-30);font-size:0.85rem;padding-bottom:6px}
 .lane{min-width:230px;flex:1;background:var(--paper);border:1px solid var(--rule);display:flex;flex-direction:column;gap:9px;padding:0 10px 10px}
@@ -229,8 +230,6 @@ body.auth-locked header .util .hidden{display:none}
 
 /* ---------- 모바일 ---------- */
 @media(max-width:680px){
-  /* 입력칸 글자가 16px보다 작으면 아이폰이 탭할 때 화면을 강제로 확대함. 전부 16px로 고정 */
-  textarea,input,select{font-size:16px}
   button,input,textarea,select{touch-action:manipulation}
   header{flex-wrap:wrap;height:auto;padding:10px 14px;gap:4px 14px}
   header nav{gap:14px}
@@ -263,8 +262,9 @@ body.auth-locked header .util .hidden{display:none}
   .lane{min-width:0}
   .board-head{gap:8px}
   .board-head .btn{flex:1;padding:10px 6px}
-  .tmpl-pick{width:100%;display:flex}
-  .tmpl-pick button{flex:1;padding:12px 4px;font-size:0.78rem}
+  .tmpl-row{gap:10px}
+  .tmpl-pick{flex:1;gap:8px}
+  .tmpl-pick button{flex:1;text-align:center;padding:11px 2px;font-size:0.8rem}
   .step{padding:14px}
   .modal{padding:24px 18px}
   .beat{cursor:default;padding-right:104px}
@@ -388,6 +388,9 @@ body.auth-locked header .util .hidden{display:none}
       <div style="flex:1"></div>
       <button class="btn" id="btn-structgen" onclick="runStructGen()">플롯 초안 만들기</button>
       <button class="btn line" id="btn-structcmp" onclick="runStructCompare()">순서 비교하기</button>
+    </div>
+    <div class="tmpl-row">
+      <span class="tmpl-label">구조 틀</span>
       <div class="tmpl-pick">
         <button id="tmpl-twostep" onclick="setTemplate('twostep')">2단 (상황 → 해석)</button>
         <button id="tmpl-threeact" onclick="setTemplate('threeact')">3막 (설정 → 대립 → 해결)</button>
@@ -717,7 +720,15 @@ function renderDetail(){
   if(!p){ switchView('home'); return; }
   document.getElementById('detail-title').value=p.title;
   renderScoreBadge(); renderSteps(); renderBoard(); renderScript(); renderGuide(); renderFB();
+  growAllTextareas();
 }
+/* 입력칸이 쓰는 만큼 아래로 늘어나게 */
+function autoGrow(el){
+  el.style.height='auto';
+  el.style.height=Math.max(el.scrollHeight, parseInt(getComputedStyle(el).minHeight)||0)+'px';
+}
+function growAllTextareas(){ document.querySelectorAll('textarea').forEach(autoGrow); }
+document.addEventListener('input', e=>{ if(e.target && e.target.tagName==='TEXTAREA') autoGrow(e.target); });
 function renderScoreBadge(){
   const p=proj();
   const stale = p.scoreStale ? ` <span class="muted">수정됨, 다시 채점해보세요</span>` : '';
@@ -1755,6 +1766,11 @@ async function cloudPush(){
 }
 
 /* 시작 */
+// 아이폰은 작은 입력칸을 탭하면 화면을 강제 확대함. 뷰포트로 막아줌 (손가락 확대는 계속 가능)
+if(/iPhone|iPad|iPod/.test(navigator.userAgent)){
+  const vm=document.querySelector('meta[name=viewport]');
+  if(vm) vm.content='width=device-width, initial-scale=1.0, maximum-scale=1.0';
+}
 // 터치 기기에는 키보드·마우스 안내가 의미 없어서 문구를 바꿔줌
 if(window.matchMedia && matchMedia('(pointer:coarse)').matches){
   const mi=document.getElementById('mat-input');
