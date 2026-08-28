@@ -1049,16 +1049,41 @@ async function runStructGen(){
   try{
     const p=proj();
     const secs=TEMPLATES[p.template].sections;
-    const raw=await callClaude(cardContext()+`\n\n기획 카드를 바탕으로 ${TEMPLATES[p.template].name} 구조 초안의 비트를 만들어줘.
-각 구간에 1~3개의 비트(한 장면·한 덩어리의 이야기, 각 1문장). 반드시 JSON만 출력:
-{${secs.map(s=>`"${s.key}":["비트1","비트2"]`).join(',')}}`);
+    const raw=await callClaude(cardContext()+`\n\n기획 카드를 바탕으로 ${TEMPLATES[p.template].name} 구조 초안의 장면을 만들어줘.
+각 구간에 1~3개의 장면(한 덩어리의 이야기, 각 1문장). 반드시 JSON만 출력하고, 키 이름은 아래 영문 키를 글자 그대로 쓸 것:
+{${secs.map(s=>`"${s.key}":["장면1","장면2"]`).join(',')}}`);
     const obj=parseJSONBlock(raw,false);
-    secs.forEach(s=>{ if(obj[s.key]) p.beats[s.key]=obj[s.key].map(t=>({id:uid(),text:t})); });
+    let wrote=0;
+    secs.forEach(s=>{
+      const arr=pickSectionArr(obj, s);
+      if(arr && arr.length){ p.beats[s.key]=arr.map(t=>({id:uid(),text:String(t)})); wrote++; }
+    });
+    if(!wrote){ alert('AI 응답을 읽지 못했어요. 한 번 더 눌러주세요.'); }
     markStale(); save(); renderBoard();
   }catch(e){ alert(e.message); }
   busy('btn-structgen',false);
 }
 
+/* AI가 다른 키 이름을 써도 구간에 매칭 */
+const SEC_ALT={
+  intro:['intro','인트로','후킹','hook','오프닝'],
+  part1:['part1','상황','전반부','part_1'],
+  part2:['part2','해석','후반부','part_2'],
+  ending:['ending','엔딩','정리','마무리','outro'],
+  setup:['setup','1막','설정','act1','act_1'],
+  conflict:['conflict','2막','대립','act2','act_2'],
+  resolve:['resolve','3막','해결','act3','act_3','resolution'],
+};
+function pickSectionArr(obj, sec){
+  const cands=[sec.key, ...(SEC_ALT[sec.key]||[]), sec.label];
+  const keys=Object.keys(obj);
+  for(const c of cands){
+    if(Array.isArray(obj[c])) return obj[c];
+    const found=keys.find(k=>k.toLowerCase().replace(/\s/g,'').includes(String(c).toLowerCase().replace(/\s/g,'')));
+    if(found && Array.isArray(obj[found])) return obj[found];
+  }
+  return null;
+}
 /* --- 플롯 순서 비교 --- */
 async function runStructCompare(){
   if(isBusy('btn-structcmp')) return;
