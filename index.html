@@ -1551,9 +1551,7 @@ async function cloudSignup(){
   const {data,error}=await supa.auth.signUp({email:idToEmail(id), password:pw, options:{data:{ploty_id:id}}});
   if(error){ authMsg(/already/i.test(error.message)?'이미 있는 아이디예요. 로그인을 눌러보세요.':'가입 실패: '+error.message); return; }
   if(!data.session){ authMsg('가입은 됐는데 자동 로그인이 안 됐어요. 로그인을 눌러주세요.'); return; }
-  // 새 계정은 빈 상태로 시작 (이 브라우저에 남아있던 다른 사람의 데이터를 흡수하지 않게)
-  state.materials=[]; state.projects=[]; state.activeProject=null; state.apiKey=''; state.deleted={};
-  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
+  // 새 계정은 빈 상태로 시작. 남아있던 데이터는 afterLogin의 주인 확인에서 백업 후 정리됨.
   await afterLogin(data.user, id);
 }
 let supaToken=null;
@@ -1572,8 +1570,11 @@ window.addEventListener('pagehide',()=>{
 async function afterLogin(user, id){
   supaUser=user;
   // 이 브라우저에 남은 데이터는 지금 로그인한 계정의 것이 확실할 때만 유지.
-  // 주인이 다르거나 표시가 없으면 무조건 버리고, 계정에 저장된 것만 불러옴.
+  // 주인이 다르거나 표시가 없으면 계정에 섞지 않고, 이 브라우저 안에 백업으로만 보관.
   if(state.owner!==user.id){
+    if((state.materials&&state.materials.length)||(state.projects&&state.projects.length)){
+      try{ localStorage.setItem('ploty_backup_'+new Date().toISOString().slice(0,10), JSON.stringify({materials:state.materials,projects:state.projects,owner:state.owner||null,savedAt:Date.now()})); }catch(e){}
+    }
     state.materials=[]; state.projects=[]; state.activeProject=null; state.apiKey=''; state.deleted={};
   }
   state.owner=user.id;
