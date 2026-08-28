@@ -358,7 +358,7 @@ body.auth-locked header .util .hidden{display:none}
 <div id="modal-settings" class="modal-bg hidden" onclick="if(event.target===this)closeSettings()">
   <div class="modal">
     <h3>설정</h3>
-    <p>API 키는 이 브라우저에만 저장돼요. 모델은 Fable 5를 사용합니다.<br>발급: console.anthropic.com → API Keys</p>
+    <p>API 키는 내 계정에 저장돼요. 어느 기기에서든 로그인하면 함께 따라옵니다. 모델은 Fable 5를 사용합니다.<br>발급: console.anthropic.com → API Keys</p>
     <input id="api-key-input" type="password" placeholder="sk-ant-...">
     <div class="row">
       <button class="btn red" onclick="saveSettings()">저장</button>
@@ -1476,10 +1476,27 @@ async function cloudSignup(){
   const {data,error}=await supa.auth.signUp({email:idToEmail(id), password:pw, options:{data:{ploty_id:id}}});
   if(error){ authMsg(/already/i.test(error.message)?'이미 있는 아이디예요. 로그인을 눌러보세요.':'가입 실패: '+error.message); return; }
   if(!data.session){ authMsg('가입은 됐는데 자동 로그인이 안 됐어요. 로그인을 눌러주세요.'); return; }
+  // 새 계정은 빈 상태로 시작 (이 브라우저에 남아있던 다른 사람의 데이터를 흡수하지 않게)
+  state.materials=[]; state.projects=[]; state.activeProject=null; state.apiKey='';
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
   await afterLogin(data.user, id);
 }
+let supaToken=null;
+window.addEventListener('pagehide',()=>{
+  // 창을 닫을 때 아직 안 올라간 변경분을 마지막으로 전송
+  if(!supa||!supaUser||!cloudTimer||!supaToken) return;
+  clearTimeout(cloudTimer); cloudTimer=null;
+  try{
+    fetch(SUPA_URL+'/rest/v1/ploty_states?on_conflict=user_id',{
+      method:'POST', keepalive:true,
+      headers:{'content-type':'application/json','apikey':SUPA_KEY,'authorization':'Bearer '+supaToken,'prefer':'resolution=merge-duplicates'},
+      body:JSON.stringify([{user_id:supaUser.id, data:{materials:state.materials,projects:state.projects,apiKey:state.apiKey||''}, updated_at:new Date().toISOString()}])
+    });
+  }catch(e){}
+});
 async function afterLogin(user, id){
   supaUser=user;
+  try{ const {data:s2}=await supa.auth.getSession(); supaToken=s2&&s2.session?s2.session.access_token:null; }catch(e){}
   document.body.classList.remove('auth-locked');
   document.getElementById('modal-auth').classList.add('hidden');
   const nm=document.getElementById('acct-name'); nm.textContent=id||displayId(); nm.classList.remove('hidden');
@@ -1514,8 +1531,8 @@ async function cloudLogout(){
   if(!confirm('로그아웃할까요? 기획안은 계정에 저장되어 있어 다시 로그인하면 그대로예요.')) return;
   clearTimeout(cloudTimer);
   await cloudPush(); // 마지막 변경분 업로드
-  // 이 브라우저에 남은 내 데이터 제거 (다음 사람에게 보이지 않게)
-  state.materials=[]; state.projects=[]; state.activeProject=null;
+  // 이 브라우저에 남은 내 데이터·API 키 제거 (다음 사람에게 넘어가지 않게)
+  state.materials=[]; state.projects=[]; state.activeProject=null; state.apiKey='';
   try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
   await supa.auth.signOut();
   location.reload();
@@ -1524,12 +1541,20 @@ async function cloudPull(){
   try{
     const {data,error}=await supa.from('ploty_states').select('data').eq('user_id',supaUser.id).maybeSingle();
     if(error) throw error;
+    const localMats=state.materials||[], localProjs=state.projects||[];
     if(data && data.data){
-      state.materials=data.data.materials||[];
-      state.projects=data.data.projects||[];
+      // 교체가 아니라 병합: 계정 데이터 우선 + 이 기기에만 있던 항목은 뒤에 붙여서 보존
+      const cm=data.data.materials||[], cp=data.data.projects||[];
+      const mIds=new Set(cm.map(m=>m.id)), pIds=new Set(cp.map(x=>x.id));
+      const addM=localMats.filter(m=>!mIds.has(m.id));
+      const addP=localProjs.filter(x=>!pIds.has(x.id));
+      state.materials=[...cm,...addM];
+      state.projects=[...cp,...addP];
       state.activeProject=null;
+      if(data.data.apiKey) state.apiKey=data.data.apiKey; // API 키는 계정 기준
       try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
-    } else if(state.projects.length||state.materials.length){
+      if(addM.length||addP.length) await cloudPush();
+    } else if(localProjs.length||localMats.length||state.apiKey){
       await cloudPush(); // 이 브라우저의 로컬 데이터를 계정 첫 데이터로 올림
     }
   }catch(e){
@@ -1543,7 +1568,8 @@ function cloudQueue(){
 }
 async function cloudPush(){
   if(!supa||!supaUser) return;
-  const payload={materials:state.materials, projects:state.projects};
+  clearTimeout(cloudTimer); cloudTimer=null;
+  const payload={materials:state.materials, projects:state.projects, apiKey:state.apiKey||''};
   const {error}=await supa.from('ploty_states').upsert({user_id:supaUser.id, data:payload, updated_at:new Date().toISOString()});
   const el=document.getElementById('save-ind');
   if(el){
