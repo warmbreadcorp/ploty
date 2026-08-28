@@ -414,6 +414,8 @@ body.auth-locked header .util .hidden{display:none}
     <input id="my-pw" type="password" placeholder="새 비밀번호 (6자 이상)" autocomplete="new-password">
     <input id="my-pw2" type="password" placeholder="새 비밀번호 한 번 더" autocomplete="new-password" onkeydown="if(event.key==='Enter')changePw()">
     <div class="muted" id="my-msg" style="margin-bottom:12px"></div>
+    <p style="margin-top:14px;margin-bottom:6px">이 브라우저에 보관된 백업</p>
+    <div class="muted" id="my-backups" style="margin-bottom:12px"></div>
     <div class="row">
       <button class="btn red" id="my-change" onclick="changePw()">비밀번호 변경</button>
       <button class="btn line" onclick="closeMyPage()">닫기</button>
@@ -1596,9 +1598,57 @@ function openMyPage(){
   document.getElementById('my-id').textContent=displayId();
   document.getElementById('my-pw').value=''; document.getElementById('my-pw2').value='';
   document.getElementById('my-msg').textContent='';
+  renderBackups();
   document.getElementById('modal-mypage').classList.remove('hidden');
 }
 function closeMyPage(){ document.getElementById('modal-mypage').classList.add('hidden'); }
+
+/* 이 브라우저에 보관된 백업 (로그인 때 계정에 속하지 않아 따로 보관해둔 데이터) */
+function listBackups(){
+  const out=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(!k||!k.startsWith('ploty_backup_')) continue;
+    try{
+      const b=JSON.parse(localStorage.getItem(k));
+      out.push({key:k, date:k.slice('ploty_backup_'.length), mats:(b.materials||[]).length, projs:(b.projects||[]).length});
+    }catch(e){}
+  }
+  return out.sort((a,b)=>b.key.localeCompare(a.key));
+}
+function renderBackups(){
+  const el=document.getElementById('my-backups'); if(!el) return;
+  const bs=listBackups();
+  if(!bs.length){ el.textContent='보관된 백업이 없어요. 로그인할 때 계정에 속하지 않은 데이터가 발견되면 여기에 보관돼요.'; return; }
+  el.innerHTML=bs.map(b=>`
+    <div style="display:flex;align-items:center;gap:8px;margin:6px 0;flex-wrap:wrap">
+      <span style="flex:1;min-width:150px">${b.date} 보관, 재료 ${b.mats}개 · 기획안 ${b.projs}개</span>
+      <button class="btn line" onclick="restoreBackup('${b.key}')">계정에 추가</button>
+      <button class="btn line" onclick="removeBackup('${b.key}')">지우기</button>
+    </div>`).join('');
+}
+async function restoreBackup(key){
+  let b=null; try{ b=JSON.parse(localStorage.getItem(key)||''); }catch(e){}
+  if(!b){ alert('백업을 읽지 못했어요.'); return; }
+  const nm=(b.materials||[]).length, np=(b.projects||[]).length;
+  if(!confirm(`이 백업의 재료 ${nm}개, 기획안 ${np}개를 지금 로그인한 계정에 추가할까요?`)) return;
+  const del=deletedMap();
+  let added=0;
+  (b.materials||[]).forEach(m=>{ if(m&&m.id){ delete del[m.id]; if(!state.materials.find(x=>x.id===m.id)){ state.materials.unshift(m); added++; } } });
+  (b.projects||[]).forEach(p=>{ if(p&&p.id){ delete del[p.id]; if(!state.projects.find(x=>x.id===p.id)){ state.projects.unshift(p); added++; } } });
+  save();
+  await cloudPush();
+  localStorage.removeItem(key); // 계정에 들어갔으니 백업은 정리
+  renderBackups();
+  if(!document.getElementById('view-materials').classList.contains('hidden')) renderMaterials();
+  else renderHome();
+  document.getElementById('my-msg').textContent = added ? '백업에서 '+added+'개를 계정에 추가했어요.' : '이미 계정에 있는 항목들이라 새로 추가된 건 없어요.';
+}
+function removeBackup(key){
+  if(!confirm('이 백업을 완전히 지울까요? 되돌릴 수 없어요.')) return;
+  localStorage.removeItem(key);
+  renderBackups();
+}
 async function changePw(){
   const pw=document.getElementById('my-pw').value, pw2=document.getElementById('my-pw2').value;
   const msg=document.getElementById('my-msg');
