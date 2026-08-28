@@ -600,7 +600,7 @@ function addMaterial(){
 }
 function delMaterial(id){
   if(!confirm('이 재료를 삭제할까요?')) return;
-  deletedIds.add(id);
+  markDeleted(id);
   state.materials=state.materials.filter(m=>m.id!==id); save(); renderMaterials();
 }
 function materialToProject(id){
@@ -645,7 +645,7 @@ function createProject(name, startText){
 function deleteProject(id){
   const p=state.projects.find(x=>x.id===id); if(!p) return;
   if(!confirm(`"${p.title}" 기획안을 삭제할까요?`)) return;
-  deletedIds.add(id);
+  markDeleted(id);
   state.projects=state.projects.filter(x=>x.id!==id);
   if(state.activeProject===id) state.activeProject=state.projects[0]?.id||null;
   save(); renderHome();
@@ -1487,13 +1487,23 @@ const SUPA_URL='https://pmiradjuofmknpwphavm.supabase.co';
 const SUPA_KEY='sb_publishable_bvvultpLC61Y40v2_7HRjQ_CZWOwgHp'; // 공개용 키 (보안은 DB의 RLS가 담당)
 const AUTH_DOMAIN='ploty.warmbread.app'; // 아이디를 내부 이메일로 변환할 때 사용
 let supa=null, supaUser=null, cloudTimer=null;
-const deletedIds=new Set(); // 이 세션에서 사용자가 직접 지운 항목 (병합 때 되살아나지 않게)
+// 삭제 기록(무덤 표시)은 계정 데이터에 함께 저장해서, 다른 기기와 병합할 때 지운 항목이 되살아나지 않게 함
+function deletedMap(){ if(!state.deleted||typeof state.deleted!=='object'||Array.isArray(state.deleted)) state.deleted={}; return state.deleted; }
+function markDeleted(id){ deletedMap()[id]=Date.now(); }
+function mergeDeleted(cloudDel){
+  const d=deletedMap();
+  Object.entries(cloudDel||{}).forEach(([id,ts])=>{ if(!d[id]||ts>d[id]) d[id]=ts; });
+  const cutoff=Date.now()-1000*60*60*24*90; // 90일 지난 기록은 정리
+  Object.keys(d).forEach(id=>{ if(d[id]<cutoff) delete d[id]; });
+  return d;
+}
 function mergeArrays(localArr, cloudArr, localPriority){
+  const del=deletedMap();
   const map=new Map();
   const first = localPriority ? (cloudArr||[]) : (localArr||[]);
   const second = localPriority ? (localArr||[]) : (cloudArr||[]);
-  first.forEach(x=>{ if(x&&x.id&&!deletedIds.has(x.id)) map.set(x.id,x); });
-  second.forEach(x=>{ if(x&&x.id&&!deletedIds.has(x.id)) map.set(x.id,x); });
+  first.forEach(x=>{ if(x&&x.id&&!del[x.id]) map.set(x.id,x); });
+  second.forEach(x=>{ if(x&&x.id&&!del[x.id]) map.set(x.id,x); });
   return [...map.values()];
 }
 
@@ -1542,7 +1552,7 @@ async function cloudSignup(){
   if(error){ authMsg(/already/i.test(error.message)?'이미 있는 아이디예요. 로그인을 눌러보세요.':'가입 실패: '+error.message); return; }
   if(!data.session){ authMsg('가입은 됐는데 자동 로그인이 안 됐어요. 로그인을 눌러주세요.'); return; }
   // 새 계정은 빈 상태로 시작 (이 브라우저에 남아있던 다른 사람의 데이터를 흡수하지 않게)
-  state.materials=[]; state.projects=[]; state.activeProject=null; state.apiKey='';
+  state.materials=[]; state.projects=[]; state.activeProject=null; state.apiKey=''; state.deleted={};
   try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
   await afterLogin(data.user, id);
 }
@@ -1555,12 +1565,18 @@ window.addEventListener('pagehide',()=>{
     fetch(SUPA_URL+'/rest/v1/ploty_states?on_conflict=user_id',{
       method:'POST', keepalive:true,
       headers:{'content-type':'application/json','apikey':SUPA_KEY,'authorization':'Bearer '+supaToken,'prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify([{user_id:supaUser.id, data:{materials:state.materials,projects:state.projects,apiKey:state.apiKey||''}, updated_at:new Date().toISOString()}])
+      body:JSON.stringify([{user_id:supaUser.id, data:{materials:state.materials,projects:state.projects,deleted:deletedMap(),apiKey:state.apiKey||''}, updated_at:new Date().toISOString()}])
     });
   }catch(e){}
 });
 async function afterLogin(user, id){
   supaUser=user;
+  // 이 브라우저에 남아있는 데이터가 다른 계정의 것이면 버리고 시작 (계정끼리 섞이지 않게)
+  if(state.owner && state.owner!==user.id){
+    state.materials=[]; state.projects=[]; state.activeProject=null; state.apiKey=''; state.deleted={};
+  }
+  state.owner=user.id;
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
   try{ const {data:s2}=await supa.auth.getSession(); supaToken=s2&&s2.session?s2.session.access_token:null; }catch(e){}
   document.body.classList.remove('auth-locked');
   document.getElementById('modal-auth').classList.add('hidden');
@@ -1597,7 +1613,7 @@ async function cloudLogout(){
   clearTimeout(cloudTimer);
   await cloudPush(); // 마지막 변경분 업로드
   // 이 브라우저에 남은 내 데이터·API 키 제거 (다음 사람에게 넘어가지 않게)
-  state.materials=[]; state.projects=[]; state.activeProject=null; state.apiKey='';
+  state.materials=[]; state.projects=[]; state.activeProject=null; state.apiKey=''; state.deleted={}; state.owner=null;
   try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
   await supa.auth.signOut();
   location.reload();
@@ -1610,12 +1626,14 @@ async function cloudPull(quiet){
     if(data && data.data){
       // 교체가 아니라 병합: 계정 데이터 우선 + 이 기기에만 있던 항목 보존
       const cm=data.data.materials||[], cp=data.data.projects||[];
-      const grew = localMats.some(m=>!cm.find(x=>x.id===m.id)) || localProjs.some(p=>!cp.find(x=>x.id===p.id));
+      mergeDeleted(data.data.deleted);
       state.materials=mergeArrays(localMats, cm, false);
       state.projects=mergeArrays(localProjs, cp, false);
       if(data.data.apiKey) state.apiKey=data.data.apiKey; // API 키는 계정 기준
       try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
-      if(grew) await cloudPush();
+      // 병합 결과가 계정 데이터와 다르면(이 기기에만 있던 항목, 또는 삭제 반영) 계정에도 올림
+      const ids=a=>(a||[]).map(x=>x.id).sort().join(',');
+      if(ids(state.materials)!==ids(cm) || ids(state.projects)!==ids(cp)) await cloudPush();
     } else if(localProjs.length||localMats.length||state.apiKey){
       await cloudPush(); // 이 브라우저의 로컬 데이터를 계정 첫 데이터로 올림
     }
@@ -1643,13 +1661,14 @@ async function cloudPush(){
   try{
     const {data}=await supa.from('ploty_states').select('data').eq('user_id',supaUser.id).maybeSingle();
     if(data && data.data){
+      mergeDeleted(data.data.deleted);
       state.materials=mergeArrays(state.materials||[], data.data.materials||[], true);
       state.projects=mergeArrays(state.projects||[], data.data.projects||[], true);
       if(!state.apiKey && data.data.apiKey) state.apiKey=data.data.apiKey;
       try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
     }
   }catch(e){}
-  const payload={materials:state.materials, projects:state.projects, apiKey:state.apiKey||''};
+  const payload={materials:state.materials, projects:state.projects, deleted:deletedMap(), apiKey:state.apiKey||''};
   const {error}=await supa.from('ploty_states').upsert({user_id:supaUser.id, data:payload, updated_at:new Date().toISOString()});
   const el=document.getElementById('save-ind');
   if(el){
