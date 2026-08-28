@@ -246,7 +246,8 @@ body.auth-locked header .util .hidden{display:none}
   header .util .m-hide{display:none} /* 자주 안 쓰는 것들은 마이페이지 안으로 */
   .wrap{padding:18px 14px 110px}
   .bottom-nav{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--ink);z-index:60;padding-bottom:env(safe-area-inset-bottom)}
-  .bottom-nav button{flex:1;padding:14px 0 12px;font-size:0.82rem;font-weight:600;color:#8a8a8a}
+  .bottom-nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 9px;font-size:0.66rem;font-weight:500;letter-spacing:0.02em;color:#8a8a8a}
+  .bottom-nav button svg{width:22px;height:22px}
   .bottom-nav button.active{color:#fff}
   .sec-nav{display:flex;position:sticky;top:0;z-index:50;background:var(--bg);gap:2px;margin:0 -14px 16px;padding:6px 10px;border-bottom:1px solid var(--rule)}
   .sec-nav button{flex:1;padding:8px 4px;font-size:0.8rem;font-weight:600;color:var(--ink-30);border-radius:8px}
@@ -1834,9 +1835,18 @@ if(window.matchMedia && matchMedia('(pointer:coarse)').matches){
 })();
 </script>
 <nav class="bottom-nav">
-  <button id="bn-home" onclick="switchView('home')">기획안</button>
-  <button id="bn-materials" onclick="switchView('materials')">재료함</button>
-  <button onclick="openMyPage()">마이페이지</button>
+  <button id="bn-home" onclick="switchView('home')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="17" rx="2.5"/><path d="M9 9h6M9 13h6M9 17h3.5"/></svg>
+    <span>기획안</span>
+  </button>
+  <button id="bn-materials" onclick="switchView('materials')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 13h4.5l1.5 2.5h4L15.5 13H20"/></svg>
+    <span>재료함</span>
+  </button>
+  <button onclick="openMyPage()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.4"/><path d="M5.5 19.5c1.3-3.2 4.2-4.6 6.5-4.6s5.2 1.4 6.5 4.6"/></svg>
+    <span>마이페이지</span>
+  </button>
 </nav>
 </body>
 </html>
