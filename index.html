@@ -54,6 +54,7 @@ header .util button:hover{color:var(--ink)}
 .tag.internal{background:var(--ink);color:#fff}
 .tag.external{border:1.5px solid var(--ink);color:var(--ink)}
 .tag.beta{background:var(--red);color:#fff}
+.tag.lbl{border:1px solid var(--ink);color:var(--ink);background:none}
 .muted{color:var(--ink-30);font-size:0.83rem}
 .stars{color:var(--red);font-weight:800;letter-spacing:2px}
 .stars .off{color:#dcdcdc}
@@ -149,6 +150,11 @@ body.auth-locked header .util .hidden{display:none}
 .ai-panel .scorebox .big{font-size:2rem;font-weight:900;color:#fff;letter-spacing:-0.03em}
 .ai-panel .fb{margin-top:14px;font-size:0.87rem;white-space:pre-wrap;line-height:1.65}
 .ai-panel .fb b{color:#ffffff}
+.ai-panel .fbi{margin-top:14px}
+.ai-panel .fbex{background:#ffffff10;padding:9px 11px;margin-top:7px;font-size:0.83rem}
+.ai-panel .mini{font-size:0.72rem;color:#9c9c9c;text-decoration:underline;padding:2px 0;margin-top:4px;display:inline-block}
+.ai-panel .mini:hover{color:#fff}
+.ai-panel .mini:disabled{text-decoration:none;opacity:0.6}
 .ai-panel .actions{display:flex;flex-direction:column;gap:8px;margin-top:16px}
 .ai-panel .btn{width:100%}
 .ai-panel .btn:not(.red){background:#ffffff14;color:#fff}
@@ -174,6 +180,12 @@ body.auth-locked header .util .hidden{display:none}
 .beat.dragging{opacity:0.4}
 .beat .bx{position:absolute;top:6px;right:8px;color:#ffffff44;font-size:0.75rem;font-weight:600}
 .beat .bx:hover{color:#fff}
+.beat .bn{position:absolute;top:5px;right:26px;color:#ffffff44;font-size:0.72rem}
+.beat .bn:hover{color:#fff}
+.beat .bnote{margin-top:7px;padding-top:6px;border-top:1px dashed #ffffff2e;color:#c9c9c9;font-size:0.77rem;line-height:1.5}
+.beat .bnote-input{width:100%;margin-top:7px;background:#ffffff14;border:1px solid #ffffff30;color:#fff;padding:6px 8px;font-size:0.78rem}
+.beat .bnote-input:focus{outline:none;border-color:#ffffff70}
+.beat .bnote-input::placeholder{color:#ffffff55}
 .beat[contenteditable="true"]{outline:2px solid var(--red);cursor:text}
 .lane .addbeat{border:1px dashed var(--ink-30);padding:8px;color:var(--ink-30);font-size:0.78rem;font-weight:500;text-align:center}
 .lane .addbeat:hover{border-color:var(--ink);color:var(--ink)}
@@ -278,6 +290,7 @@ body.auth-locked header .util .hidden{display:none}
       <button class="back" onclick="switchView('home')">←</button>
       <input class="title" id="detail-title" oninput="onTitle(this.value)">
       <span class="muted" id="save-ind" style="font-size:0.76rem"></span>
+      <button class="btn line sm" onclick="exportPDF()">PDF 내보내기</button>
       <div class="score-badge" id="detail-score"></div>
     </div>
 
@@ -303,6 +316,7 @@ body.auth-locked header .util .hidden{display:none}
         <div id="panel-score"></div>
         <div class="actions">
           <button class="btn red" id="btn-feedback" onclick="runFeedback()">채점 받기</button>
+          <button class="btn" id="btn-short" onclick="runShortform()">숏폼으로 덜어내기</button>
           <div class="muted" id="feedback-hint" style="display:none">기획 카드를 채우면 채점할 수 있어요</div>
         </div>
         <div id="fb" class="fb muted">기획 카드를 채운 뒤 채점을 받아보세요.</div>
@@ -530,7 +544,8 @@ function renderHome(){
       <div class="prow"><div class="prog"><i style="width:${prog}%"></i></div><span class="muted">${prog}%</span></div>
       <div class="pfoot">
         ${sc!=null?`<span>${starsHTML(sc)} <span class="score-num">${sc}</span><span class="muted">/100</span>${p.scoreStale?' <span class="muted">수정됨</span>':''}</span>`:'<span class="noscore">채점 전</span>'}
-        <button class="del" onclick="event.stopPropagation();deleteProject('${p.id}')">삭제</button>
+        <span>${p.label?`<span class="tag lbl">${esc(p.label)}</span>`:''}
+        <button class="del" onclick="event.stopPropagation();deleteProject('${p.id}')">삭제</button></span>
       </div>
     </div>`;
   }).join('');
@@ -627,7 +642,7 @@ function renderGuide(){
   window.__guideAct=t.act;
   const hasCard=cardHasContent();
   const hasBeats=Object.values(p.beats).some(a=>a.length);
-  [['btn-feedback',hasCard],['btn-structgen',hasCard],['btn-structcmp',hasBeats],['btn-script',hasCard]].forEach(([id,ok])=>{
+  [['btn-feedback',hasCard],['btn-short',hasCard],['btn-structgen',hasCard],['btn-structcmp',hasBeats],['btn-script',hasCard]].forEach(([id,ok])=>{
     const b=document.getElementById(id);
     if(b && b.dataset.busy!=='1') b.disabled=!ok;
   });
@@ -637,16 +652,16 @@ function renderDetail(){
   const p=proj();
   if(!p){ switchView('home'); return; }
   document.getElementById('detail-title').value=p.title;
-  renderScoreBadge(); renderSteps(); renderBoard(); renderScript(); renderGuide();
-  document.getElementById('fb').innerHTML = p.feedback ? fmt(p.feedback) : '<span class="muted">기획 카드를 채운 뒤 채점을 받아보세요.</span>';
+  renderScoreBadge(); renderSteps(); renderBoard(); renderScript(); renderGuide(); renderFB();
 }
 function renderScoreBadge(){
   const p=proj();
   const stale = p.scoreStale ? ` <span class="muted">수정됨, 다시 채점해보세요</span>` : '';
+  const lbl = p.label ? `<span class="tag lbl">${esc(p.label)}</span> ` : '';
   const el=document.getElementById('detail-score');
   el.innerHTML = p.score!=null
-    ? `${starsHTML(p.score)} <span class="score-num">${p.score}</span><span class="muted">/100</span>${stale}`
-    : `<span class="muted">채점 전</span>`;
+    ? `${lbl}${starsHTML(p.score)} <span class="score-num">${p.score}</span><span class="muted">/100</span>${stale}`
+    : `${lbl}<span class="muted">채점 전</span>`;
   const ps=document.getElementById('panel-score');
   ps.innerHTML = p.score!=null
     ? `<div class="scorebox">${starsHTML(p.score)}<div class="big">${p.score}<span style="font-size:0.9rem;color:#9c9c9c">/100</span></div>${p.scoreStale?'<div class="muted" style="margin-top:4px">수정 후 아직 다시 채점하지 않았어요</div>':''}</div>` : '';
@@ -783,7 +798,7 @@ function renderBoard(){
       ${(p.beats[s.key]||[]).map(b=>`
         <div class="beat" draggable="true" data-id="${b.id}"
              ondragstart="beatDragStart(event)" ondragend="beatDragEnd(event)"
-             ondblclick="beatEdit(this)" onblur="beatSave(this)">${esc(b.text)}<span class="bx" onmousedown="event.preventDefault()" onclick="beatDel('${b.id}')">✕</span></div>`).join('')}
+             ondblclick="beatEdit(this)" onblur="beatSave(this)"><span class="btxt">${esc(b.text)}</span><span class="bn" title="장면 메모 (촬영·연출 고민)" onmousedown="event.preventDefault()" onclick="beatNoteEdit('${b.id}',this)">✎</span><span class="bx" onmousedown="event.preventDefault()" onclick="beatDel('${b.id}')">✕</span>${b.note?`<div class="bnote">${esc(b.note)}</div>`:''}</div>`).join('')}
       <button class="addbeat" onclick="beatAddInput(this,'${s.key}')">+ 장면</button>
     </div>`).join('');
   renderGuide();
@@ -830,14 +845,44 @@ function beatDel(id){
   for(const k of Object.keys(p.beats)){ p.beats[k]=p.beats[k].filter(b=>b.id!==id); }
   markStale(); save(); renderBoard();
 }
-function beatEdit(el){ el.contentEditable=true; el.focus(); }
-function beatSave(el){
-  if(el.contentEditable!=='true') return;
-  el.contentEditable=false;
-  const p=proj(); const id=el.dataset.id;
-  const text=el.innerText.replace(/✕\s*$/,'').trim();
-  for(const k of Object.keys(p.beats)){ const b=p.beats[k].find(x=>x.id===id); if(b) b.text=text; }
-  markStale(); save(); renderBoard();
+function findBeat(id){
+  const p=proj();
+  for(const k of Object.keys(p.beats)){ const b=p.beats[k].find(x=>x.id===id); if(b) return b; }
+  return null;
+}
+function beatEdit(el){
+  const t=el.querySelector('.btxt'); if(!t) return;
+  t.contentEditable=true; t.focus();
+  t.onblur=()=>{
+    t.contentEditable=false;
+    const b=findBeat(el.dataset.id);
+    if(b){ b.text=t.innerText.trim(); markStale(); save(); }
+    renderBoard();
+  };
+}
+function beatSave(el){ /* .btxt 단위로 처리 */ }
+function beatNoteEdit(id, btn){
+  const card=btn.closest('.beat');
+  if(card.querySelector('.bnote-input')) return;
+  const b=findBeat(id); if(!b) return;
+  const old=card.querySelector('.bnote'); if(old) old.remove();
+  const input=document.createElement('input');
+  input.className='bnote-input';
+  input.placeholder='이 장면에 대한 고민·메모 (예: 여기 어떤 컷으로 찍지?)  Enter로 저장, 비우면 삭제';
+  input.value=b.note||'';
+  card.draggable=false;
+  card.appendChild(input); input.focus();
+  let done=false;
+  const commit=()=>{
+    if(done) return; done=true;
+    b.note=input.value.trim();
+    if(!b.note) delete b.note;
+    save(); renderBoard();
+  };
+  input.onkeydown=(e)=>{ if(e.key==='Enter') commit(); if(e.key==='Escape'){ done=true; renderBoard(); } };
+  input.onblur=commit;
+  input.ondblclick=(e)=>e.stopPropagation();
+  input.onmousedown=(e)=>e.stopPropagation();
 }
 
 /* ---------- 대본 ---------- */
@@ -859,7 +904,12 @@ function renderScript(){
     </button>`).join('');
   document.getElementById('script-groups').innerHTML = SCRIPT_GROUPS.map(g=>`
     <div class="script-group">
-      <h4>${g.label}</h4><div class="gd">${g.gd}</div>
+      <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+        <h4>${g.label}</h4><div class="gd" style="margin:0">${g.gd}</div>
+        <div style="flex:1"></div>
+        <button class="btn line sm" id="sp-${g.key}" onclick="runScriptPart('${g.key}')">이 부분만 AI</button>
+      </div>
+      <div style="height:10px"></div>
       ${s.lines[g.key].map((l,i)=>`
         <div class="sline"><span class="n">${i+1}</span>
           <input value="${esc(l)}" oninput="onLine('${g.key}',${i},this.value)"></div>`).join('')}
@@ -937,8 +987,8 @@ function friendlyErr(status, text){
 }
 function cardContext(){
   const p=proj();
-  const beats=TEMPLATES[p.template].sections.map(s=>`- ${s.label}: ${(p.beats[s.key]||[]).map(b=>b.text).join(' / ')||'(비어있음)'}`).join('\n');
-  return `[기획 카드]
+  const beats=TEMPLATES[p.template].sections.map(s=>`- ${s.label}: ${(p.beats[s.key]||[]).map(b=>b.text+(b.note?` (장면 메모: ${b.note})`:'')).join(' / ')||'(비어있음)'}`).join('\n');
+  let ctx=`[기획 카드]
 시작점: ${p.card.start||'(비어있음)'}
 해체: ${p.card.decompose||'(비어있음)'}
 소비자 편익(${p.card.benefitType||'분류 미정'}): ${p.card.benefit||'(비어있음)'}
@@ -947,6 +997,11 @@ function cardContext(){
 
 [구조 보드 — ${TEMPLATES[p.template].name}]
 ${beats}`;
+  const as=activeScript();
+  if(as && SCRIPT_GROUPS.some(g=>(as.lines[g.key]||[]).some(l=>l&&l.trim()))){
+    ctx+=`\n\n[대본 — ${as.label}]\n`+SCRIPT_GROUPS.map(g=>`- ${g.label}: ${(as.lines[g.key]||[]).filter(l=>l&&l.trim()).join(' / ')||'(비어있음)'}`).join('\n');
+  }
+  return ctx;
 }
 function isBusy(id){ const b=document.getElementById(id); return !!(b && b.dataset.busy==='1'); }
 function busy(id,on){
@@ -1047,35 +1102,97 @@ function applyCand(key, el){
 }
 
 /* --- 채점 --- */
+const LABELS=['웃음','위로','공감','도움','동경','호기심'];
 async function runFeedback(){
   if(isBusy('btn-feedback')) return;
   if(!cardHasContent()){ alert('기획 카드가 아직 비어 있어요. 시작점부터 채워주세요.'); return; }
   busy('btn-feedback',true);
   try{
-    const raw=await callClaude(cardContext()+`\n\n이 기획을 5개 심사 기준으로 평가하고 점수를 매겨줘.
+    const raw=await callClaude(cardContext()+`\n\n이 기획을 5개 심사 기준으로 평가하고 점수를 매겨줘. 대본이 있으면 대본도 함께 심사해줘 (특히 '첫 3초'와 '대놓고 말하지 않기'는 대본 문장 기준으로).
+각 항목의 example에는 그 방향으로 고친 구체적인 예시 문장 1개를 이 기획의 소재를 그대로 써서 만들어줘.
+label은 이 기획이 보는 사람에게서 이끌어내는 반응을 다음 여섯 중 하나로: 웃음, 위로, 공감, 도움, 동경, 호기심.
 반드시 아래 JSON 형식만 출력:
 {
  "items":[
-  {"name":"보는 사람이 얻는 것","score":0~20,"verdict":"통과|보완|경고","note":"이유 1~2문장 + 보완 대안. 쉬운 말로."},
-  {"name":"대놓고 말하지 않기","score":0~20,"verdict":"...","note":"..."},
-  {"name":"돌려 말하기의 힘","score":0~20,"verdict":"...","note":"..."},
-  {"name":"재미","score":0~20,"verdict":"...","note":"..."},
-  {"name":"첫 3초","score":0~20,"verdict":"...","note":"..."}
+  {"name":"보는 사람이 얻는 것","score":0~20,"verdict":"통과|보완|경고","note":"이유 1~2문장 + 보완 대안. 쉬운 말로.","example":"고친 방향을 보여주는 예시 문장 1개"},
+  {"name":"대놓고 말하지 않기","score":0~20,"verdict":"...","note":"...","example":"..."},
+  {"name":"돌려 말하기의 힘","score":0~20,"verdict":"...","note":"...","example":"..."},
+  {"name":"재미","score":0~20,"verdict":"...","note":"...","example":"..."},
+  {"name":"첫 3초","score":0~20,"verdict":"...","note":"...","example":"..."}
  ],
  "total":0~100,
+ "label":"여섯 중 하나",
  "fix_first":"가장 먼저 고칠 것 한 가지",
  "comment":"총평 2~3문장"
-}`, 3500);
+}`, 4000);
     const r=parseJSONBlock(raw,false);
     const p=proj();
     p.scoreStale=false;
     p.score=Math.max(0,Math.min(100,Math.round(r.total)));
-    p.feedback = r.items.map(it=>`**${it.name} ${it.score}/20 · ${it.verdict}**\n${it.note}`).join('\n\n')
-      + `\n\n**◎ 가장 먼저 고칠 것**\n${r.fix_first}\n\n**총평**\n${r.comment}`;
-    save(); renderScoreBadge();
-    document.getElementById('fb').innerHTML=fmt(p.feedback);
+    p.fbItems=r.items||[]; p.fbFix=r.fix_first||''; p.fbComment=r.comment||'';
+    p.label=LABELS.includes(r.label)?r.label:null;
+    p.fbMode='score';
+    save(); renderScoreBadge(); renderFB();
   }catch(e){ alert(e.message); }
   busy('btn-feedback',false);
+}
+function renderFB(){
+  const p=proj(); const el=document.getElementById('fb'); if(!el||!p) return;
+  if(p.fbMode==='score' && p.fbItems && p.fbItems.length){
+    el.innerHTML = p.fbItems.map((it,i)=>`
+      <div class="fbi"><b>${esc(it.name)} ${it.score}/20 · ${esc(it.verdict)}</b>
+      <div>${esc(it.note)}</div>
+      <div class="fbex">${esc(it.example||'')}<br><button class="mini" id="ex-${i}" onclick="runExample(${i})">예시 새로고침</button></div></div>`).join('')
+      + `<div class="fbi"><b>◎ 가장 먼저 고칠 것</b><div>${esc(p.fbFix)}</div></div>`
+      + `<div class="fbi"><b>총평</b><div>${esc(p.fbComment)}</div></div>`;
+  } else if(p.fbMode==='short' && p.shortform){
+    const sf=p.shortform;
+    el.innerHTML = `<div class="fbi"><b>숏폼에 남길 핵심 3가지 (중요도순)</b>`
+      + (sf.keep||[]).map((k,i)=>`<div class="fbex"><b>${i+1}.</b> ${esc(k.text)}<br><span class="muted">${esc(k.why||'')}</span></div>`).join('') + `</div>`
+      + `<div class="fbi"><b>이번엔 덜어내고, 다음에 쓸 소재</b>`
+      + (sf.defer||[]).map((d,i)=>`<div class="fbex">${esc(d.text)}<br><span class="muted">${esc(d.advice||'')}</span><br><button class="mini" onclick="deferToMaterial(${i},this)">재료함에 넣어두기</button></div>`).join('') + `</div>`
+      + (sf.comment?`<div class="fbi"><b>총평</b><div>${esc(sf.comment)}</div></div>`:'');
+  } else {
+    el.innerHTML = p.feedback ? fmt(p.feedback) : '<span class="muted">기획 카드를 채운 뒤 채점을 받아보세요.</span>';
+  }
+}
+async function runExample(i){
+  if(isBusy('ex-'+i)) return;
+  const p=proj(); const it=p.fbItems && p.fbItems[i]; if(!it) return;
+  busy('ex-'+i,true);
+  try{
+    const raw=await callClaude(cardContext()+`\n\n심사 항목 "${it.name}"에 대한 코치 의견: ${it.note}
+지금까지 제시한 예시: ${it.example||'없음'}
+같은 방향을 보여주는, 위 예시와는 "다른" 구체적 예시 문장 1개를 새로 만들어줘. 이 기획의 소재를 그대로 사용.
+반드시 JSON만: {"example":"..."}`, 800);
+    const o=parseJSONBlock(raw,false);
+    if(o.example){ it.example=o.example; save(); }
+  }catch(e){ alert(e.message); }
+  busy('ex-'+i,false);
+  renderFB();
+}
+/* --- 숏폼으로 덜어내기 --- */
+async function runShortform(){
+  if(isBusy('btn-short')) return;
+  if(!cardHasContent()){ alert('기획 카드가 아직 비어 있어요. 시작점부터 채워주세요.'); return; }
+  busy('btn-short',true);
+  try{
+    const raw=await callClaude(cardContext()+`\n\n이 기획(롱폼 기준)을 숏폼(30초~1분)으로 덜어내려고 해.
+1) 이 기획의 대표 주제 5~6가지를 떠올린 뒤, 숏폼에 남길 핵심 3가지를 중요도 순으로 골라줘. 각각 왜 남기는지 한 줄.
+2) 이번 숏폼에서는 덜어낼 소재 2~4개. 각각 "묵혀뒀다가 다음 콘텐츠에서 이렇게 써보자"는 한 줄 조언을 붙여줘.
+반드시 JSON만 출력:
+{"keep":[{"text":"...","why":"..."}],"defer":[{"text":"...","advice":"..."}],"comment":"한 줄 총평"}`, 2500);
+    const o=parseJSONBlock(raw,false);
+    const p=proj(); p.shortform=o; p.fbMode='short';
+    save(); renderFB();
+  }catch(e){ alert(e.message); }
+  busy('btn-short',false);
+}
+function deferToMaterial(i, btn){
+  const d=proj().shortform && proj().shortform.defer[i]; if(!d) return;
+  state.materials.unshift({id:uid(), text:d.text+(d.advice?`\n(다음에: ${d.advice})`:''), type:'internal', createdAt:Date.now()});
+  save();
+  btn.textContent='재료함에 저장됨'; btn.disabled=true;
 }
 
 /* --- 구조 초안 --- */
@@ -1135,8 +1252,8 @@ async function runStructCompare(){
 1) 현재 순서의 강점과 약점
 2) 다른 순서 대안 2개 — 각각 "어떤 비트를 어디로 옮기는지"와 "그러면 시청자 경험이 어떻게 달라지는지"
 3) 템플릿 적합성 — 이 기획은 인식 전환형(2단)인지 사건 전개형(3막)인지, 지금 선택이 맞는지`);
-    proj().feedback=t; save();
-    document.getElementById('fb').innerHTML=fmt(t);
+    const pj=proj(); pj.feedback=t; pj.fbMode='text'; save();
+    renderFB();
   }catch(e){ alert(e.message); }
   busy('btn-structcmp',false);
 }
@@ -1162,6 +1279,74 @@ hook 2개, front 6개, back 6개, close 5개를 맞춰.`, 4000);
     save(); renderScript();
   }catch(e){ alert(e.message); }
   busy('btn-script',false);
+}
+
+/* --- 대본 부분 재생성 --- */
+async function runScriptPart(gkey){
+  const id='sp-'+gkey; if(isBusy(id)) return;
+  if(!cardHasContent()){ alert('기획 카드가 아직 비어 있어요. 기획이 서야 대본이 나와요.'); return; }
+  const s=activeScript(); const g=SCRIPT_GROUPS.find(x=>x.key===gkey);
+  if(s.lines[gkey].some(x=>x&&x.trim()) && !confirm(`'${g.label}' 부분만 AI 초안으로 교체할까요? 다른 부분은 그대로 둬요.`)) return;
+  busy(id,true);
+  try{
+    const raw=await callClaude(cardContext()+`\n\n위 대본에서 '${g.label}' 부분(${g.gd})만 다시 써줘.
+나머지 부분의 흐름·말투와 자연스럽게 이어져야 해. 최대 ${g.count}문장, 구어체, 메시지를 직접 설교하지 말 것.
+반드시 JSON만 출력: {"lines":["문장1","문장2"]}`, 1500);
+    const o=parseJSONBlock(raw,false);
+    s.lines[gkey]=Array.from({length:g.count},(_,i)=>(o.lines&&o.lines[i])||'');
+    save(); renderScript();
+  }catch(e){ alert(e.message); }
+  busy(id,false);
+}
+
+/* --- PDF 내보내기 --- */
+function exportPDF(){
+  const p=proj(); if(!p) return;
+  const as=activeScript();
+  const chain=Array.isArray(p.card.chain)?p.card.chain.filter(c=>c.v&&c.v.trim()):[];
+  const chainHtml = chain.length
+    ? `<div class="box">${esc(p.card.start)}${chain.map(c=>`<br><span class="arr">${c.t==='eq'?'= 바꿔 말하면':'↓ 왜 그럴까?'}</span><br>${esc(c.v)}`).join('')}</div>`
+    : `<div class="box">${esc(p.card.decompose||'(비어있음)')}</div>`;
+  const beatsHtml = TEMPLATES[p.template].sections.map(sec=>{
+    const bs=(p.beats[sec.key]||[]);
+    return `<tr><td class="n"><b>${esc(sec.label)}</b><br><span class="arr">${esc(sec.time||'')}</span></td><td>${bs.length?bs.map(b=>esc(b.text)+(b.note?`<br><span class="arr">메모: ${esc(b.note)}</span>`:'')).join('<br>'):'<span class="arr">(비어있음)</span>'}</td></tr>`;
+  }).join('');
+  const hasScript = as && SCRIPT_GROUPS.some(g=>(as.lines[g.key]||[]).some(l=>l&&l.trim()));
+  const scriptHtml = hasScript ? `<h2>대본 <span class="arr">(${esc(as.label)})</span></h2><table>`+SCRIPT_GROUPS.map(g=>{
+    const ls=(as.lines[g.key]||[]).filter(l=>l&&l.trim());
+    return ls.length?`<tr><td class="n"><b>${esc(g.label)}</b></td><td>${ls.map(esc).join('<br>')}</td></tr>`:'';
+  }).join('')+`</table>` : '';
+  const html=`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(p.title)}</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+body{font-family:"Pretendard Variable",Pretendard,-apple-system,sans-serif;color:#1a1a1a;max-width:720px;margin:44px auto;padding:0 24px;line-height:1.65;font-size:14px}
+h1{font-size:25px;letter-spacing:-0.02em;border-bottom:2px solid #1a1a1a;padding-bottom:12px;margin-bottom:6px}
+h2{font-size:14px;margin:26px 0 6px;letter-spacing:0.02em}
+.meta{color:#888;font-size:12px;margin-bottom:8px}
+.lbl{display:inline-block;border:1px solid #1a1a1a;padding:1px 8px;font-size:11px;font-weight:700;margin-right:6px}
+.box{background:#f5f5f5;padding:12px 14px;margin:4px 0 2px;white-space:pre-wrap}
+.arr{color:#999;font-size:11.5px}
+table{width:100%;border-collapse:collapse;margin-top:4px}
+td{border-top:1px solid #e5e5e5;padding:9px 8px;vertical-align:top}
+td.n{width:92px;color:#555;font-size:12px}
+.foot{margin-top:40px;color:#bbb;font-size:11px;border-top:1px solid #e5e5e5;padding-top:10px}
+@media print{body{margin:8mm auto}}
+</style></head><body>
+<h1>${esc(p.title)}</h1>
+<div class="meta">${p.label?`<span class="lbl">${esc(p.label)}</span>`:''}${p.score!=null?`${p.score}/100점 · `:''}${new Date().toLocaleDateString('ko-KR')} · (ploty)</div>
+<h2>시작점</h2><div class="box">${esc(p.card.start||'(비어있음)')}</div>
+<h2>왜? 파고들기</h2>${chainHtml}
+<h2>보는 사람이 얻는 것${p.card.benefitType?` <span class="arr">(${esc(p.card.benefitType)})</span>`:''}</h2><div class="box">${esc(p.card.benefit||'(비어있음)')}</div>
+<h2>하고 싶은 말</h2><div class="box">${esc(p.card.message||'(비어있음)')}</div>
+<h2>대신 보여줄 이야기</h2><div class="box">${esc(p.card.keycontent||'(비어있음)')}</div>
+<h2>플롯 <span class="arr">(${esc(TEMPLATES[p.template].name)})</span></h2><table>${beatsHtml}</table>
+${scriptHtml}
+<div class="foot">ploty에서 내보냄</div>
+<script>window.onload=()=>setTimeout(()=>window.print(),400)<\/script>
+</body></html>`;
+  const w=window.open('','_blank');
+  if(!w){ alert('팝업이 차단됐어요. 이 사이트의 팝업을 허용해주세요.'); return; }
+  w.document.write(html); w.document.close();
 }
 
 /* ============================================================
