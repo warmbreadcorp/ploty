@@ -141,7 +141,13 @@ body.auth-locked header .util .hidden{display:none}
 .step textarea{width:100%;border:none;border-radius:8px;background:#f5f5f5;padding:12px 13px;min-height:58px;resize:none;overflow:hidden}
 .step textarea:focus{outline:2px solid var(--ink)}
 .step .tools{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
-.benefit-select{background:#f5f5f5;border:none;border-radius:8px;padding:9px 12px;font-size:0.82rem;color:var(--ink);max-width:100%;margin-top:10px;display:block}
+.bselect{position:relative;margin-top:10px;max-width:280px}
+.bsel-btn{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;background:#f5f5f5;border-radius:8px;padding:10px 13px;font-size:0.85rem;color:var(--ink);text-align:left}
+.bsel-btn .chev{color:var(--ink-30);font-size:0.9rem;line-height:1}
+.bsel-menu{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--paper);border:1px solid var(--rule);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.1);z-index:40;overflow:hidden}
+.bsel-menu button{display:block;width:100%;text-align:left;padding:11px 14px;font-size:0.85rem;color:var(--ink)}
+.bsel-menu button:hover{background:#f5f5f5}
+.bsel-menu button.on{font-weight:700}
 .chain{display:flex;flex-direction:column;gap:5px}
 .chain .seed{background:#f5f5f5;border-radius:8px;padding:10px 13px;font-size:0.9rem;color:var(--ink-60)}
 .chain .arrow{font-size:0.74rem;color:var(--ink-30);padding:2px 0 2px 13px;text-align:left;align-self:flex-start;cursor:pointer}
@@ -269,7 +275,9 @@ body.auth-locked header .util .hidden{display:none}
   .guide{font-size:0.84rem;padding:10px 12px}
   .plan-grid{gap:16px}
   .ai-panel{position:static;max-height:none}
-  .benefit-select{padding:11px 12px;font-size:16px}
+  .bselect{max-width:none}
+  .bsel-btn{padding:12px 13px;font-size:0.95rem}
+  .bsel-menu button{padding:13px 14px;font-size:0.95rem}
   .chain .cx{padding:10px 12px;font-size:1rem}
   .chain .arrow{padding:8px 0 8px 13px}
   .chain .addwhy{padding:10px 16px;font-size:0.85rem}
@@ -782,11 +790,14 @@ function renderSteps(){
   const nextIdx=STEP_DEFS.findIndex(s=>!(p.card[s.key]||'').trim());
   el.innerHTML = STEP_DEFS.map((s,i)=>{
     const val=p.card[s.key]||'';
+    const curBT = BENEFIT_TYPES.find(t=>t.v===p.card.benefitType);
     const benefitTypes = s.key==='benefit' ? `
-      <select class="benefit-select" onchange="setBenefitType(this.value)">
-        <option value="" ${!p.card.benefitType?'selected':''}>어느 쪽인지 골라주세요</option>
-        ${BENEFIT_TYPES.map(t=>`<option value="${t.v}" ${p.card.benefitType===t.v?'selected':''}>${t.l}</option>`).join('')}
-      </select>`:'';
+      <div class="bselect">
+        <button class="bsel-btn" onclick="bselToggle(event)"><span>${curBT?curBT.l:'어느 쪽인지 골라주세요'}</span><span class="chev">⌄</span></button>
+        <div class="bsel-menu hidden" id="bsel-menu">
+          ${BENEFIT_TYPES.map(t=>`<button class="${p.card.benefitType===t.v?'on':''}" onclick="setBenefitType('${t.v}')">${t.l}${p.card.benefitType===t.v?' ✓':''}</button>`).join('')}
+        </div>
+      </div>`:'';
     const body = s.key==='decompose' ? chainHTML(p) :
       `<textarea data-step="${s.key}" placeholder="${s.ph}" oninput="onStepInput(this)">${esc(val)}</textarea>`;
     return `
@@ -864,7 +875,12 @@ function onStepInput(t){
   }
   renderGuide();
 }
-function setBenefitType(t){ const p=proj(); p.card.benefitType=t; markStale(); save(); }
+function setBenefitType(t){ const p=proj(); p.card.benefitType=(p.card.benefitType===t?'':t); markStale(); save(); renderSteps(); }
+function bselToggle(e){
+  e.stopPropagation();
+  const m=document.getElementById('bsel-menu'); if(m) m.classList.toggle('hidden');
+}
+document.addEventListener('click', ()=>{ const m=document.getElementById('bsel-menu'); if(m && !m.classList.contains('hidden')) m.classList.add('hidden'); });
 function markStale(){
   const p=proj();
   if(p && p.score!=null && !p.scoreStale){ p.scoreStale=true; renderScoreBadge(); }
