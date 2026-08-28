@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>(ploty)</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -26,7 +26,7 @@
   --dark-card:#2e2e2e;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{overflow-x:hidden} /* 페이지가 가로로 밀리지 않게 */
+html,body{overflow-x:hidden;overflow-x:clip} /* 페이지가 가로로 밀리지 않게 (clip은 sticky를 깨지 않음) */
 body{background:var(--bg);color:var(--ink);font-family:"Pretendard Variable",Pretendard,-apple-system,sans-serif;line-height:1.55;font-size:15px;word-break:keep-all;overflow-wrap:anywhere}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 textarea,input,select{font-family:inherit;font-size:0.95rem;color:var(--ink)}
@@ -72,6 +72,9 @@ header .util button:hover{color:var(--ink)}
 .score-num{font-weight:800}
 .hidden{display:none!important}
 body.auth-locked .wrap{display:none}
+body.auth-locked .bottom-nav{display:none !important}
+.bottom-nav{display:none}
+.sec-nav{display:none}
 body.auth-locked header .util .hidden{display:none}
 .empty-hint{grid-column:1/-1;width:100%;padding:70px 0;text-align:center;color:var(--ink-30);font-size:0.95rem}
 .empty-hint b{color:var(--ink)}
@@ -236,12 +239,19 @@ body.auth-locked header .util .hidden{display:none}
 @media(max-width:680px){
   button,input,textarea,select{touch-action:manipulation}
   header{flex-wrap:wrap;height:auto;padding:10px 14px;gap:4px 14px}
-  header nav{gap:14px}
-  header nav button{padding:8px 0;font-size:1rem}
+  header nav{display:none} /* 이동은 하단 탭 바로 */
+  #acct-name{display:none}
   header .util{gap:6px;flex-wrap:wrap}
   header .util button{font-size:0.85rem;padding:8px 5px}
   header .util .m-hide{display:none} /* 자주 안 쓰는 것들은 마이페이지 안으로 */
-  .wrap{padding:18px 14px 90px}
+  .wrap{padding:18px 14px 110px}
+  .bottom-nav{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1px solid var(--rule);z-index:60;padding-bottom:env(safe-area-inset-bottom)}
+  .bottom-nav button{flex:1;padding:13px 0 11px;font-size:0.82rem;font-weight:600;color:var(--ink-30)}
+  .bottom-nav button.active{color:var(--ink)}
+  .sec-nav{display:flex;position:sticky;top:0;z-index:50;background:var(--bg);gap:2px;margin:0 -14px 16px;padding:6px 10px;border-bottom:1px solid var(--rule)}
+  .sec-nav button{flex:1;padding:8px 4px;font-size:0.8rem;font-weight:600;color:var(--ink-30);border-radius:8px}
+  .sec-nav button:active{background:#eaeaea;color:var(--ink)}
+  #steps,.ai-panel,.board-head,.script-head{scroll-margin-top:52px}
   .section-title{font-size:1.2rem}
   .section-sub{font-size:0.82rem}
   .home-top{flex-direction:column;border-bottom:none}
@@ -359,6 +369,13 @@ body.auth-locked header .util .hidden{display:none}
       <span id="guide-text"></span>
       <div style="flex:1"></div>
       <button class="btn red sm" id="guide-btn" onclick="guideAction()"></button>
+    </div>
+
+    <div class="sec-nav">
+      <button onclick="secJump('steps')">기획 카드</button>
+      <button onclick="secJump('coach')">AI 코치</button>
+      <button onclick="secJump('board')">플롯</button>
+      <button onclick="secJump('script')">대본</button>
     </div>
 
     <div class="plan-grid">
@@ -563,6 +580,10 @@ function switchView(v){
   });
   document.getElementById('nav-home').classList.toggle('active', v==='home'||v==='detail');
   document.getElementById('nav-materials').classList.toggle('active', v==='materials');
+  const bh=document.getElementById('bn-home'), bm=document.getElementById('bn-materials');
+  if(bh) bh.classList.toggle('active', v==='home'||v==='detail');
+  if(bm) bm.classList.toggle('active', v==='materials');
+  window.scrollTo(0,0);
   if(v==='home') renderHome();
   if(v==='materials') renderMaterials();
   if(v==='detail') renderDetail();
@@ -699,6 +720,13 @@ function nextTask(){
   return {text:'좋아요. 장면 순서를 바꿔 실험해보거나, 대본을 써보세요.', btn:'대본 열기', act:()=>{ if(!scriptOpen) toggleScript(); document.getElementById('script-groups').scrollIntoView({behavior:'smooth'}); }};
 }
 function guideAction(){ if(window.__guideAct) window.__guideAct(); }
+function secJump(k){
+  const t = k==='steps' ? document.getElementById('steps')
+    : k==='coach' ? document.querySelector('.ai-panel')
+    : k==='board' ? document.querySelector('.board-head')
+    : document.querySelector('.script-head');
+  if(t) t.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function scrollToStep(idx){
   const el=document.querySelectorAll('#steps .step')[idx];
   if(!el) return;
@@ -1781,7 +1809,7 @@ async function cloudPush(){
 // 아이폰은 작은 입력칸을 탭하면 화면을 강제 확대함. 뷰포트로 막아줌 (손가락 확대는 계속 가능)
 if(/iPhone|iPad|iPod/.test(navigator.userAgent)){
   const vm=document.querySelector('meta[name=viewport]');
-  if(vm) vm.content='width=device-width, initial-scale=1.0, maximum-scale=1.0';
+  if(vm) vm.content='width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover';
 }
 // 터치 기기에는 키보드·마우스 안내가 의미 없어서 문구를 바꿔줌
 if(window.matchMedia && matchMedia('(pointer:coarse)').matches){
@@ -1805,5 +1833,10 @@ if(window.matchMedia && matchMedia('(pointer:coarse)').matches){
   if(!state.onboarded) startOnboarding();
 })();
 </script>
+<nav class="bottom-nav">
+  <button id="bn-home" onclick="switchView('home')">기획안</button>
+  <button id="bn-materials" onclick="switchView('materials')">재료함</button>
+  <button onclick="openMyPage()">마이페이지</button>
+</nav>
 </body>
 </html>
