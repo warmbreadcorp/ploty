@@ -182,11 +182,10 @@ body.auth-locked header .util .hidden{display:none}
 
 /* ---------- 구조 보드 ---------- */
 .board-head{display:flex;align-items:flex-end;gap:14px;margin:44px 0 4px;padding-top:32px;border-top:1px solid var(--rule);flex-wrap:wrap}
-.tmpl-row{display:flex;align-items:center;gap:16px;margin-top:20px;border-bottom:1px solid var(--rule)}
-.tmpl-label{font-size:0.7rem;font-weight:700;letter-spacing:0.1em;color:var(--ink-30);padding-bottom:2px}
-.tmpl-pick{display:flex;gap:20px}
-.tmpl-pick button{padding:8px 2px;border:none;background:none;font-weight:600;font-size:0.85rem;color:var(--ink-30);border-bottom:2px solid transparent;margin-bottom:-1px}
-.tmpl-pick button.on{color:var(--ink);border-bottom-color:var(--red)}
+.tmpl-row{display:flex;align-items:center;margin-top:16px}
+.tmpl-pick{display:inline-flex;background:#eaeaea;border-radius:999px;padding:3px;gap:2px}
+.tmpl-pick button{border:none;background:none;border-radius:999px;padding:7px 16px;font-weight:600;font-size:0.8rem;color:var(--ink-60)}
+.tmpl-pick button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,0.1)}
 .board{display:flex;flex-wrap:wrap;gap:10px;padding:16px 0 10px;align-items:stretch}
 .board>.bhint{width:100%;color:var(--ink-30);font-size:0.85rem;padding-bottom:6px}
 .lane{min-width:230px;flex:1;background:var(--paper);border:1px solid var(--rule);border-radius:12px;display:flex;flex-direction:column;gap:9px;padding:0 10px 10px}
@@ -268,9 +267,8 @@ body.auth-locked header .util .hidden{display:none}
   .lane{min-width:0}
   .board-head{gap:8px}
   .board-head .btn{flex:1;padding:10px 6px}
-  .tmpl-row{gap:10px}
-  .tmpl-pick{flex:1;gap:8px}
-  .tmpl-pick button{flex:1;text-align:center;padding:11px 2px;font-size:0.8rem}
+  .tmpl-pick{width:100%}
+  .tmpl-pick button{flex:1;text-align:center;padding:10px 2px;font-size:0.78rem}
   .step{padding:14px}
   .modal{padding:24px 18px}
   .beat{cursor:default;padding-right:104px}
@@ -396,7 +394,6 @@ body.auth-locked header .util .hidden{display:none}
       <button class="btn line" id="btn-structcmp" onclick="runStructCompare()">순서 비교하기</button>
     </div>
     <div class="tmpl-row">
-      <span class="tmpl-label">구조 틀</span>
       <div class="tmpl-pick">
         <button id="tmpl-twostep" onclick="setTemplate('twostep')">2단 (상황 → 해석)</button>
         <button id="tmpl-threeact" onclick="setTemplate('threeact')">3막 (설정 → 대립 → 해결)</button>
