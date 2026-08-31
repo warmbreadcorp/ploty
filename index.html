@@ -220,6 +220,11 @@ body.auth-locked header .util .hidden{display:none}
 
 /* ---------- 대본 ---------- */
 .script-head{display:flex;align-items:flex-end;gap:14px;margin:44px 0 14px;padding-top:32px;border-top:1px solid var(--rule);flex-wrap:wrap}
+.why-head{display:flex;align-items:flex-end;gap:14px;margin:44px 0 14px;padding-top:32px;border-top:1px solid var(--rule);flex-wrap:wrap}
+.wrow{display:flex;gap:10px;align-items:center;margin-bottom:6px}
+.wrow .wlabel{width:120px;font-size:0.78rem;font-weight:600;color:var(--ink-60);flex-shrink:0}
+.wrow input{flex:1;border:none;border-radius:8px;background:#f5f5f5;padding:9px 12px;min-width:0}
+.wrow input:focus{outline:2px solid var(--ink)}
 .ver-tabs{display:flex;gap:0;flex-wrap:wrap}
 .ver-tabs button{padding:8px 14px;border:1px solid var(--rule);border-radius:8px;background:none;font-weight:500;font-size:0.8rem;color:var(--ink-60)}
 .ver-tabs button+button{border-left:none}
@@ -228,7 +233,11 @@ body.auth-locked header .util .hidden{display:none}
 .script-group{background:var(--paper);border:1px solid var(--rule);padding:18px 20px;margin-bottom:10px}
 .script-group h4{font-size:0.95rem;font-weight:700;letter-spacing:-0.01em}
 .script-group .gd{font-size:0.76rem;color:var(--ink-60);margin:2px 0 12px}
-.sline{display:flex;gap:10px;align-items:center;margin-bottom:6px}
+.sline{display:flex;gap:10px;align-items:flex-start;margin-bottom:6px}
+.sline .n{padding-top:9px}
+.sline .lwrap{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+.sline .conti{border:none;border-radius:6px;background:#ececec;padding:7px 12px;font-size:0.78rem;color:var(--ink-60)}
+.sline .conti:focus{outline:1.5px solid var(--ink);color:var(--ink)}
 .sline .n{width:22px;text-align:right;font-size:0.72rem;font-weight:500;color:var(--ink-30)}
 .sline input{flex:1;border:none;border-radius:8px;background:#f5f5f5;padding:9px 12px}
 .sline input:focus{outline:2px solid var(--ink)}
@@ -299,6 +308,8 @@ body.auth-locked header .util .hidden{display:none}
   .beat .bicons{gap:13px;top:9px}
   .beat .bicons span{font-size:0.95rem;padding:2px}
   .script-head{gap:8px}
+  .why-head{gap:8px}
+  .wrow .wlabel{width:86px;font-size:0.72rem}
 }
 /* ---------- 길라잡이 ---------- */
 .onb .onb-num{font-weight:900;color:var(--ink-30);font-size:2.2rem;letter-spacing:-0.04em;margin-bottom:2px}
@@ -438,10 +449,23 @@ body.auth-locked header .util .hidden{display:none}
       </div>
       <div style="flex:1"></div>
       <button class="btn line" id="btn-script-toggle" onclick="toggleScript()">열기</button>
+      <button class="btn line hidden" id="btn-conti" onclick="toggleConti()">화면 메모</button>
+      <button class="btn hidden" id="btn-conti-ai" onclick="runContiSuggest()">화면 제안</button>
       <button class="btn hidden" id="btn-script" onclick="runScriptDraft()">AI 초안 추가</button>
     </div>
     <div class="ver-tabs" id="ver-tabs"></div>
     <div id="script-groups" style="margin-top:12px"></div>
+
+    <!-- 구간 역할: 대본까지 쓴 뒤 정리하는 챕터 -->
+    <div class="why-head">
+      <div class="sect" style="margin:0">
+        <div class="section-title">구간 역할</div>
+        <div class="section-sub">대본까지 쓰고 나면, 구간마다 무슨 일을 하는지 한 줄씩 정리해보세요. 채점과 화면 제안이 더 똑똑해져요.</div>
+      </div>
+      <div style="flex:1"></div>
+      <button class="btn" id="btn-why-ai" onclick="runWhySuggest()">AI 추천</button>
+    </div>
+    <div id="why-rows"></div>
   </div>
 </div>
 
@@ -704,7 +728,7 @@ function createProject(name, startText){
   const p={
     id:uid(), title:name||'무제', createdAt:Date.now(),
     card:{start:startText||'', decompose:'', chain:[''], benefit:'', benefitType:'', message:'', keycontent:''},
-    template:'twostep', beats:{},
+    template:'twostep', beats:{}, why:{},
     scripts:[blankScript('내 대본')], activeScript:null,
     feedback:'', score:null, scoreStale:false
   };
@@ -758,7 +782,7 @@ function renderGuide(){
   window.__guideAct=t.act;
   const hasCard=cardHasContent();
   const hasBeats=Object.values(p.beats).some(a=>a.length);
-  [['btn-feedback',hasCard],['btn-short',hasCard],['btn-structgen',hasCard],['btn-structcmp',hasBeats],['btn-script',hasCard]].forEach(([id,ok])=>{
+  [['btn-feedback',hasCard],['btn-short',hasCard],['btn-structgen',hasCard],['btn-structcmp',hasBeats],['btn-script',hasCard],['btn-why-ai',hasCard]].forEach(([id,ok])=>{
     const b=document.getElementById(id);
     if(b && b.dataset.busy!=='1') b.disabled=!ok;
   });
@@ -768,8 +792,14 @@ function renderDetail(){
   const p=proj();
   if(!p){ switchView('home'); return; }
   document.getElementById('detail-title').value=p.title;
-  renderScoreBadge(); renderSteps(); renderBoard(); renderScript(); renderGuide(); renderFB();
+  renderScoreBadge(); renderSteps(); renderBoard(); renderScript(); renderWhyRows(); renderGuide(); renderFB();
   growAllTextareas();
+}
+function renderWhyRows(){
+  const p=proj(); const el=document.getElementById('why-rows'); if(!el||!p) return;
+  el.innerHTML = TEMPLATES[p.template].sections.map(s=>`
+    <div class="wrow"><span class="wlabel">${s.label}</span>
+      <input placeholder="전할 내용과 느끼게 할 감정을 한 줄로" value="${esc((p.why&&p.why[s.key])||'')}" oninput="whyInput('${s.key}',this.value)"></div>`).join('');
 }
 /* 입력칸이 쓰는 만큼 아래로 늘어나게 */
 function autoGrow(el){
@@ -816,6 +846,7 @@ function renderSteps(){
       ${benefitTypes}
       <div class="tools">
         <div style="flex:1"></div>
+        ${s.key!=='decompose'?`<button class="btn line sm" id="ten-${s.key}" onclick="runTenVersions('${s.key}')" ${val.trim()?'':'disabled'} title="쓴 문장을 열 가지 표현으로 굴려봐요">다르게 써보기</button>`:''}
         <button class="btn line sm" id="ref-${s.key}" onclick="runRefine('${s.key}')" ${val.trim()?'':'disabled'}>다듬기</button>
         <button class="btn sm" id="sug-${s.key}" onclick="runSuggest('${s.key}')">AI 추천받기</button>
       </div>
@@ -914,7 +945,7 @@ function setTemplate(t){
     p.template=t; p.beats=nb;
     markStale();
   }
-  save(); renderBoard();
+  save(); renderBoard(); renderWhyRows();
 }
 function renderBoard(){
   const p=proj();
@@ -985,6 +1016,12 @@ function beatDel(id){
   for(const k of Object.keys(p.beats)){ p.beats[k]=p.beats[k].filter(b=>b.id!==id); }
   markStale(); save(); renderBoard();
 }
+function whyInput(sec,v){
+  const p=proj(); if(!p) return;
+  if(!p.why) p.why={};
+  p.why[sec]=v;
+  markStale(); save();
+}
 function beatMove(id, dir){
   const p=proj(); const keys=TEMPLATES[p.template].sections.map(s=>s.key);
   for(let si=0; si<keys.length; si++){
@@ -1044,13 +1081,24 @@ function beatNoteEdit(id, btn){
 }
 
 /* ---------- 대본 ---------- */
-let scriptOpen=false;
+let scriptOpen=false, contiOpen=false;
 function toggleScript(){ scriptOpen=!scriptOpen; renderScript(); }
+function toggleConti(){ contiOpen=!contiOpen; renderScript(); }
+// 대본 문장마다 화면 메모(줄콘티)를 담는 배열. 없으면 만들어서 돌려줌
+function contiArr(s, g){
+  if(!s.conti) s.conti={};
+  if(!Array.isArray(s.conti[g.key])) s.conti[g.key]=Array(g.count).fill('');
+  return s.conti[g.key];
+}
+function onConti(g,i,v){ const s=activeScript(); const grp=SCRIPT_GROUPS.find(x=>x.key===g); contiArr(s,grp)[i]=v; save(); }
 function activeScript(){ const p=proj(); return p.scripts.find(s=>s.id===p.activeScript)||p.scripts[0]; }
 function renderScript(){
   const p=proj(); const s=activeScript();
   document.getElementById('btn-script-toggle').textContent = scriptOpen?'접기':'열기';
   document.getElementById('btn-script').classList.toggle('hidden', !scriptOpen);
+  document.getElementById('btn-conti').classList.toggle('hidden', !scriptOpen);
+  document.getElementById('btn-conti').textContent = contiOpen?'화면 메모 닫기':'화면 메모';
+  document.getElementById('btn-conti-ai').classList.toggle('hidden', !scriptOpen || !contiOpen);
   if(!scriptOpen){
     document.getElementById('ver-tabs').innerHTML='';
     document.getElementById('script-groups').innerHTML='';
@@ -1070,7 +1118,10 @@ function renderScript(){
       <div style="height:10px"></div>
       ${s.lines[g.key].map((l,i)=>`
         <div class="sline"><span class="n">${i+1}</span>
-          <input value="${esc(l)}" oninput="onLine('${g.key}',${i},this.value)"></div>`).join('')}
+          <div class="lwrap">
+            <input value="${esc(l)}" oninput="onLine('${g.key}',${i},this.value)">
+            ${contiOpen?`<input class="conti" value="${esc(contiArr(s,g)[i]||'')}" placeholder="이 문장에 어떤 화면을 보여줄까요?" oninput="onConti('${g.key}',${i},this.value)">`:''}
+          </div></div>`).join('')}
     </div>`).join('');
 }
 function pickScript(id){ proj().activeScript=id; save(); renderScript(); }
@@ -1107,6 +1158,16 @@ const SYSTEM = `너는 "ploty"의 영상 기획 코치다. 아래 방법론(전�
 ③ 키 콘텐츠의 간접성: 키 콘텐츠가 메시지를 간접적으로 '느끼게' 하는가
 ④ 노잼 경보: 논리는 맞는데 재미가 없진 않은가 — 구체적 장면·디테일이 있는가
 ⑤ 첫 3초: 시작 비트에 계속 볼 이유가 있는가
+
+[2강 방법론: 어떻게 말할까 (대본과 화면)]
+- 구간별 역할(WHY): 인트로·상황·해석·마무리 각 구간마다 역할을 정한다. 역할은 두 겹이다: 전달할 내용(정보) + 느끼게 할 감정(감각). 구간에 역할이 적혀 있으면 모든 장면·문장·화면 제안이 그 역할을 다하게 만든다.
+- 가지치기 3기준(Yes/No가 아니라 스펙트럼): ① 구간의 역할을 뒷받침하는가 ② 재미가 있는가 ③ 영상으로 표현할 방법이 있는가. 셋 다 약한 소재는 덜어낸다.
+- 문장 3기준: 명확한 문장(의미가 잘 전달되는가), 와닿는 문장(전하려는 감정을 제대로 전하는가), 깔끔한 문장(이해에 필요 없는 말이 없는가). 말하듯 쓰고, "이 문장은 역할을 다하고 있는가"로 검토한다.
+- 와닿는 문장의 결(일본 카피의 원칙): 제품 설명보다 사람이 놓인 상황, 기능의 수혜자가 아니라 이야기의 주인공, 큰 감정보다 작은 감정, 해결사가 아니라 동행자, 정답보다 태도. 단, 이 결은 무거워지기 쉬우니 느끼해지지 않게 절제한다.
+- 후킹의 재정의: 후킹 = 관심 끌기 + 이야기의 시작. 낚아올리는 감각이 아니라 초대하는 감각. 첫 문장은 시청자를 붙잡는 문장이 아니라 다음 문장을 보게 만드는 문장이다(소설의 첫 문장처럼). 시각적 후킹과 첫 문장을 합쳐서 생각한다.
+- 화면 구성: 모든 컷은 "이 컷은 어떤 역할을 해야 하는가"에 답해야 하고, 나레이션이 전하려는 바를 돕는다. 편집 순서가 의미를 만든다(쿨레쇼프 효과). 전환에는 음악의 변화(빨라짐, 멈춤)도 큰 역할을 한다.
+- 다큐멘터리 화면 기법: 재연/재구성(연기·실루엣·애니메이션·미니어처), 부분 프레이밍(얼굴 대신 손·발·뒷모습, 예: 초조하게 볼펜 돌리는 손), 아카이브 활용(카톡 캡쳐, 사진·메모 스캔, 캘린더, 책 밑줄, 작업 화면), 은유적 B롤(비슷한 질감의 장면, 예: 분노=끓는 주전자, 기다림=줄어드는 엘리베이터 숫자, 환희=폭죽).
+- 대본을 쓸 때 편집에 쓸 음악을 틀고 쓰면 리듬이 산다.
 
 [말투]
 - 한국어. 자연스럽고 담백한 존댓말("~해요", "~해보세요"). 이모지, 과장된 칭찬, 호들갑은 쓰지 않는다.
@@ -1145,7 +1206,10 @@ function friendlyErr(status, text){
 }
 function cardContext(){
   const p=proj();
-  const beats=TEMPLATES[p.template].sections.map(s=>`- ${s.label}: ${(p.beats[s.key]||[]).map(b=>b.text+(b.note?` (장면 메모: ${b.note})`:'')).join(' / ')||'(비어있음)'}`).join('\n');
+  const beats=TEMPLATES[p.template].sections.map(s=>{
+    const w=(p.why&&p.why[s.key]||'').trim();
+    return `- ${s.label}${w?` [구간의 역할: ${w}]`:''}: ${(p.beats[s.key]||[]).map(b=>b.text+(b.note?` (장면 메모: ${b.note})`:'')).join(' / ')||'(비어있음)'}`;
+  }).join('\n');
   let ctx=`[기획 카드]
 시작점: ${p.card.start||'(비어있음)'}
 해체: ${p.card.decompose||'(비어있음)'}
@@ -1241,6 +1305,25 @@ why에는 원문에서 뭘 왜 바꿨는지 한 줄로.
     }
   }catch(e){ alert(e.message); }
   busy('ref-'+key,false);
+}
+/* --- 10버전: 같은 문장을 열 가지로 굴려보기 (2강 AI 활용법) --- */
+async function runTenVersions(key){
+  if(isBusy('ten-'+key)) return;
+  const p=proj();
+  const val=(p.card[key]||'').trim();
+  if(!val) return;
+  busy('ten-'+key,true);
+  try{
+    const hint=`<div class="muted" style="margin-top:4px">마음에 드는 버전을 클릭하면 칸에 들어가요</div>`;
+    const raw=await callClaude(cardContext()+`\n\n사용자가 쓴 이 문장을 10개 버전으로 적어줘: "${val}"
+뜻은 유지하되 표현을 조금씩 다르게. 절반은 안전하게 다듬은 버전, 절반은 결이 다른 과감한 버전으로.
+명확한가(의미 전달), 와닿는가(감정 전달), 깔끔한가(군더더기 없음)를 기준으로 삼아.
+반드시 JSON 배열만 출력: [{"text":"버전 문장"}]`, 2000);
+    let list; try{ list=parseJSONBlock(raw,true); }catch(e){ list=[]; }
+    document.getElementById('cands-'+key).innerHTML = list.slice(0,10).map(c=>`
+      <div class="cand" onclick="applyCand('${key}', this)"><span>${esc(c.text||'')}</span></div>`).join('') + hint;
+  }catch(e){ alert(e.message); }
+  busy('ten-'+key,false);
 }
 function applyChainCand(el){
   const p=proj();
@@ -1366,6 +1449,7 @@ async function runStructGen(){
     const p=proj();
     const secs=TEMPLATES[p.template].sections;
     const raw=await callClaude(cardContext()+`\n\n기획 카드를 바탕으로 ${TEMPLATES[p.template].name} 구조 초안의 장면을 만들어줘.
+구간에 역할(전할 내용, 느끼게 할 감정)이 적혀 있으면 그 역할을 다하는 장면으로 구성해.
 각 구간에 1~3개의 장면(한 덩어리의 이야기, 각 1문장). 반드시 JSON만 출력하고, 키 이름은 아래 영문 키를 글자 그대로 쓸 것:
 {${secs.map(s=>`"${s.key}":["장면1","장면2"]`).join(',')}}`);
     const obj=parseJSONBlock(raw,false);
@@ -1457,6 +1541,62 @@ async function runScriptPart(gkey){
   busy(id,false);
 }
 
+/* --- 화면 제안: 문장마다 어울리는 화면(줄콘티)을 AI가 채워줌 --- */
+async function runContiSuggest(){
+  if(isBusy('btn-conti-ai')) return;
+  const s=activeScript();
+  const targets=[];
+  SCRIPT_GROUPS.forEach(g=>{
+    const conti=contiArr(s,g);
+    (s.lines[g.key]||[]).forEach((l,i)=>{
+      if(l&&l.trim()&&!(conti[i]&&conti[i].trim())) targets.push({g:g.key,i,text:l.trim()});
+    });
+  });
+  if(!targets.length){ alert('화면 메모가 비어 있는 문장이 없어요. 대본을 먼저 적어보세요.'); return; }
+  busy('btn-conti-ai',true);
+  try{
+    const raw=await callClaude(cardContext()+`\n\n아래 대본 문장들 각각에 어울리는 화면을 한 줄씩 제안해줘.
+다큐멘터리 화면 기법을 활용해: 재연/재구성(연기·실루엣·애니), 부분 프레이밍(얼굴 대신 손·발·뒷모습), 아카이브(카톡 캡쳐, 사진·메모 스캔, 캘린더, 책 밑줄, 작업 화면), 은유적 B롤(비슷한 질감의 장면, 예: 분노=끓는 주전자, 기다림=줄어드는 엘리베이터 숫자).
+휴대폰으로 혼자 찍을 수 있는 수준으로, 구체적이고 짧게.
+문장 목록: ${JSON.stringify(targets)}
+반드시 JSON 배열만 출력: [{"g":"hook","i":0,"scene":"화면 제안 한 줄"}]`, 2500);
+    let list; try{ list=parseJSONBlock(raw,true); }catch(e){ list=[]; }
+    let filled=0;
+    list.forEach(it=>{
+      const g=SCRIPT_GROUPS.find(x=>x.key===it.g); if(!g) return;
+      const conti=contiArr(s,g);
+      if(typeof it.i==='number' && it.i>=0 && it.i<g.count && it.scene){ conti[it.i]=String(it.scene); filled++; }
+    });
+    if(!filled){ alert('제안을 읽지 못했어요. 한 번 더 눌러보세요.'); }
+    save(); renderScript();
+  }catch(e){ alert(e.message); }
+  busy('btn-conti-ai',false);
+}
+
+/* --- 구간 역할 AI 추천: 기획 카드·플롯·대본을 읽고 비어 있는 역할을 채워줌 --- */
+async function runWhySuggest(){
+  if(isBusy('btn-why-ai')) return;
+  if(!cardHasContent()){ alert('기획 카드가 아직 비어 있어요. 시작점부터 채워주세요.'); return; }
+  const p=proj();
+  const secs=TEMPLATES[p.template].sections;
+  const empty=secs.filter(s=>!(p.why&&p.why[s.key]&&p.why[s.key].trim()));
+  if(!empty.length){ alert('모든 구간에 역할이 적혀 있어요. 비우고 다시 누르면 새로 추천해드려요.'); return; }
+  busy('btn-why-ai',true);
+  try{
+    const raw=await callClaude(cardContext()+`\n\n위 기획을 읽고, 각 구간의 역할을 한 줄씩 정해줘.
+역할은 "전할 내용 + 느끼게 할 감정"을 한 문장에 담는다. 예: "이름 때문에 숨고 싶었던 상황을 보여주고, 피식 웃게 만든다"
+반드시 JSON만 출력하고, 키 이름은 아래 영문 키를 글자 그대로 쓸 것:
+{${empty.map(s=>`"${s.key}":"역할 한 줄"`).join(',')}}`, 1200);
+    const obj=parseJSONBlock(raw,false);
+    if(!p.why) p.why={};
+    let wrote=0;
+    empty.forEach(s=>{ if(obj[s.key] && typeof obj[s.key]==='string'){ p.why[s.key]=obj[s.key]; wrote++; } });
+    if(!wrote){ alert('추천을 읽지 못했어요. 한 번 더 눌러보세요.'); }
+    save(); renderWhyRows();
+  }catch(e){ alert(e.message); }
+  busy('btn-why-ai',false);
+}
+
 /* --- PDF 내보내기 --- */
 function exportPDF(){
   const p=proj(); if(!p) return;
@@ -1467,12 +1607,14 @@ function exportPDF(){
     : `<div class="box">${esc(p.card.decompose||'(비어있음)')}</div>`;
   const beatsHtml = TEMPLATES[p.template].sections.map(sec=>{
     const bs=(p.beats[sec.key]||[]);
-    return `<tr><td class="n"><b>${esc(sec.label)}</b><br><span class="arr">${esc(sec.time||'')}</span></td><td>${bs.length?bs.map(b=>esc(b.text)+(b.note?`<br><span class="arr">메모: ${esc(b.note)}</span>`:'')).join('<br>'):'<span class="arr">(비어있음)</span>'}</td></tr>`;
+    const w=(p.why&&p.why[sec.key]||'').trim();
+    return `<tr><td class="n"><b>${esc(sec.label)}</b><br><span class="arr">${esc(sec.time||'')}</span></td><td>${w?`<span class="arr">역할: ${esc(w)}</span><br>`:''}${bs.length?bs.map(b=>esc(b.text)+(b.note?`<br><span class="arr">메모: ${esc(b.note)}</span>`:'')).join('<br>'):'<span class="arr">(비어있음)</span>'}</td></tr>`;
   }).join('');
   const hasScript = as && SCRIPT_GROUPS.some(g=>(as.lines[g.key]||[]).some(l=>l&&l.trim()));
   const scriptHtml = hasScript ? `<h2>대본 <span class="arr">(${esc(as.label)})</span></h2><table>`+SCRIPT_GROUPS.map(g=>{
-    const ls=(as.lines[g.key]||[]).filter(l=>l&&l.trim());
-    return ls.length?`<tr><td class="n"><b>${esc(g.label)}</b></td><td>${ls.map(esc).join('<br>')}</td></tr>`:'';
+    const conti=(as.conti&&as.conti[g.key])||[];
+    const rows=(as.lines[g.key]||[]).map((l,i)=>({l,c:conti[i]||''})).filter(r=>r.l&&r.l.trim());
+    return rows.length?`<tr><td class="n"><b>${esc(g.label)}</b></td><td>${rows.map(r=>esc(r.l)+(r.c?`<br><span class="arr">화면: ${esc(r.c)}</span>`:'')).join('<br>')}</td></tr>`:'';
   }).join('')+`</table>` : '';
   const html=`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(p.title)}</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
