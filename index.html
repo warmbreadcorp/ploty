@@ -192,6 +192,11 @@ body.auth-locked header .util .hidden{display:none}
 /* ---------- 구조 보드 ---------- */
 .board-head{display:flex;align-items:flex-end;gap:14px;margin:44px 0 4px;padding-top:32px;border-top:1px solid var(--rule);flex-wrap:wrap}
 .tmpl-pick{display:inline-flex;background:#eaeaea;border-radius:10px;padding:3px;gap:2px;margin-top:14px}
+.tmpl-help{position:relative;margin-top:14px}
+.thelp-btn{width:24px;height:24px;border-radius:50%;border:1px solid var(--rule);color:var(--ink-30);font-size:0.76rem;font-weight:700;display:flex;align-items:center;justify-content:center;background:var(--paper)}
+.thelp-btn:hover{color:var(--ink);border-color:var(--ink)}
+.thelp-pop{position:absolute;top:calc(100% + 6px);left:0;width:min(300px, calc(100vw - 40px));background:var(--paper);border:1px solid var(--rule);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.1);padding:14px 16px;font-size:0.8rem;line-height:1.65;z-index:45}
+.thelp-pop p{margin:0 0 10px}
 .tmpl-pick button{border:none;background:none;border-radius:7px;padding:7px 16px;font-weight:600;font-size:0.8rem;color:var(--ink-60)}
 .tmpl-pick button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,0.1)}
 .board{display:flex;flex-wrap:wrap;gap:10px;padding:16px 0 10px;align-items:stretch}
@@ -433,9 +438,19 @@ body.auth-locked header .util .hidden{display:none}
       <div class="sect" style="margin:0">
         <div class="section-title">플롯</div>
         <div class="section-sub" id="board-sub">기획을 장면 카드로 쪼개 순서를 잡는 곳이에요.</div>
-        <div class="tmpl-pick">
-          <button id="tmpl-twostep" onclick="setTemplate('twostep')">2단 (상황 → 해석)</button>
-          <button id="tmpl-threeact" onclick="setTemplate('threeact')">3막 (설정 → 대립 → 해결)</button>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="tmpl-pick">
+            <button id="tmpl-twostep" onclick="setTemplate('twostep')">2단 (상황 → 해석)</button>
+            <button id="tmpl-threeact" onclick="setTemplate('threeact')">3막 (설정 → 대립 → 해결)</button>
+          </div>
+          <div class="tmpl-help">
+            <button class="thelp-btn" onclick="thelpToggle(event)" title="어떤 걸 고를까요?">?</button>
+            <div class="thelp-pop hidden" id="thelp-pop">
+              <p><b>2단</b>은 생각을 바꿔주는 영상에 어울려요. 공감 가는 상황을 보여준 뒤, 같은 상황을 다르게 보게 만드는 구조예요. 대부분의 기획은 이걸로 충분해요.</p>
+              <p><b>3막</b>은 사건이 벌어지는 이야기에 어울려요. 시간이 흐르며 문제가 생기고 풀리는 과정 자체가 재미일 때 골라보세요.</p>
+              <p class="muted" style="margin:0">고민되면 2단으로 시작해보세요.</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -919,7 +934,15 @@ function bselToggle(e){
   e.stopPropagation();
   const m=document.getElementById('bsel-menu'); if(m) m.classList.toggle('hidden');
 }
-document.addEventListener('click', ()=>{ const m=document.getElementById('bsel-menu'); if(m && !m.classList.contains('hidden')) m.classList.add('hidden'); });
+function thelpToggle(e){
+  e.stopPropagation();
+  const m=document.getElementById('thelp-pop'); if(m) m.classList.toggle('hidden');
+}
+document.addEventListener('click', ()=>{
+  ['bsel-menu','thelp-pop'].forEach(id=>{
+    const m=document.getElementById(id); if(m && !m.classList.contains('hidden')) m.classList.add('hidden');
+  });
+});
 function markStale(){
   const p=proj();
   if(p && p.score!=null && !p.scoreStale){ p.scoreStale=true; renderScoreBadge(); }
