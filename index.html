@@ -64,6 +64,8 @@ header .util button:hover{color:var(--ink)}
 .tag{display:inline-block;font-size:0.68rem;font-weight:600;padding:3px 8px;letter-spacing:0.06em;border-radius:6px}
 .tag.internal{background:var(--ink);color:#fff}
 .tag.external{border:1.5px solid var(--ink);color:var(--ink)}
+.tagbtn{cursor:pointer;transition:opacity .12s}
+.tagbtn:hover{opacity:0.72}
 .tag.beta{background:var(--red);color:#fff}
 .tag.lbl{border:1px solid var(--ink);color:var(--ink);background:none}
 .muted{color:var(--ink-30);font-size:0.83rem}
@@ -88,12 +90,38 @@ body.auth-locked header .util .hidden{display:none}
 .proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
 .pcard{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:20px;cursor:pointer;display:flex;flex-direction:column;gap:10px;transition:border-color .12s}
 .pcard:hover{border-color:var(--ink)}
-.pcard .ptitle{font-weight:700;font-size:1.05rem;letter-spacing:-0.02em}
+.pcard .ptitle{font-weight:700;font-size:1.05rem;letter-spacing:-0.02em;padding-right:34px}
 .pcard .pstart{font-size:0.86rem;color:var(--ink-60);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .pcard .prow{display:flex;align-items:center;gap:8px;margin-top:auto}
 .pcard .prog{flex:1;height:3px;background:#e8e8e8}
 .pcard .prog i{display:block;height:100%;background:var(--ink)}
-.pcard .pfoot{display:flex;align-items:center;justify-content:space-between}
+.pcard{position:relative}
+.pcard .pfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.pcard .pscore{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
+/* 좌측 상단 리본 표시 */
+.ribbon{position:absolute;top:-1px;left:16px;width:18px;height:26px;clip-path:polygon(0 0,100% 0,100% 100%,50% 72%,0 100%)}
+.ribbon.red{background:#ff1e3c}
+.ribbon.blue{background:#2563eb}
+.ribbon.yellow{background:#eab308}
+.ribbon.green{background:#16a34a}
+.ribbon.black{background:#1a1a1a}
+/* 우측 상단 더보기 메뉴 */
+.pmenu-btn{position:absolute;top:8px;right:10px;width:30px;height:30px;border-radius:8px;color:var(--ink-30);font-size:1.1rem;line-height:1;display:flex;align-items:center;justify-content:center}
+.pmenu-btn:hover{background:#f0f0f0;color:var(--ink)}
+.pmenu{position:absolute;top:40px;right:10px;z-index:30;background:var(--paper);border:1px solid var(--rule);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:5px;min-width:132px}
+.pmenu>button{display:block;width:100%;text-align:left;padding:9px 11px;border-radius:7px;font-size:0.84rem;color:var(--ink)}
+.pmenu>button:hover{background:#f5f5f5}
+.pmenu-marks{display:flex;gap:6px;padding:8px 9px 5px;margin-top:4px;border-top:1px solid var(--rule);flex-wrap:wrap}
+.pmenu-marks .mk{width:19px;height:19px;border-radius:50%;border:2px solid transparent;flex-shrink:0}
+.pmenu-marks .mk.on{border-color:var(--ink)}
+.pmenu-marks .mk.red{background:#ff1e3c}
+.pmenu-marks .mk.blue{background:#2563eb}
+.pmenu-marks .mk.yellow{background:#eab308}
+.pmenu-marks .mk.green{background:#16a34a}
+.pmenu-marks .mk.black{background:#1a1a1a}
+.pmenu-marks .mk.none{background:#f0f0f0;color:var(--ink-30);font-size:0.62rem;display:flex;align-items:center;justify-content:center}
+.lblnote{font-size:0.76rem;color:var(--ink-30)}
+.stale{font-size:0.72rem;color:var(--ink-30);border:1px solid var(--rule);border-radius:5px;padding:1px 6px;white-space:nowrap}
 .pcard .noscore{font-size:0.76rem;color:var(--ink-30);font-weight:500}
 .pcard .pmeta{font-size:0.76rem;color:var(--ink-60);white-space:nowrap}
 .pcard .del{color:var(--ink-30);font-size:0.78rem;font-weight:500}
@@ -123,7 +151,7 @@ body.auth-locked header .util .hidden{display:none}
 .projbar textarea.title{font-size:1.6rem;font-weight:800;letter-spacing:-0.03em;border:none;background:none;flex:1;min-width:180px;padding:0;resize:none;overflow:hidden;line-height:1.25;font-family:inherit}
 .projbar textarea.title:focus{outline:none;border-bottom:1px solid var(--ink)}
 .projbar input.title:focus{outline:none}
-.score-badge{display:flex;align-items:center;gap:8px;font-size:0.95rem}
+.score-badge{display:flex;align-items:center;gap:8px;font-size:0.95rem;flex-wrap:wrap}
 
 .guide{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:22px;font-size:0.9rem;flex-wrap:wrap}
 .guide .glabel{font-weight:700;font-size:0.78rem;letter-spacing:0.04em;color:var(--red)}
@@ -313,7 +341,13 @@ body.auth-locked header .util .hidden{display:none}
   .addbox .col{flex-direction:row;justify-content:flex-end;align-items:center}
   .mat .foot button{font-size:0.85rem;padding:9px 6px}
   .pcard .del{font-size:0.85rem;padding:9px 6px}
-  .projbar{gap:10px;padding-bottom:10px}
+  /* 모바일에서는 줄을 나눠 배치해요. 1줄 뒤로+제목, 2줄 버튼, 3줄 점수 */
+  .projbar{gap:8px 10px;padding-bottom:10px}
+  .projbar .back{order:1}
+  .projbar textarea.title{order:2;flex:1 1 auto;min-width:0}
+  .projbar .btn{order:3}
+  .projbar #save-ind{order:4}
+  .projbar .score-badge{order:5;width:100%}
   .projbar input.title{font-size:1.15rem;min-width:100px}
   .guide{font-size:0.84rem;padding:10px 12px}
   .plan-grid{gap:16px}
@@ -765,14 +799,23 @@ function renderHome(){
     const sc=p.score;
     return `
     <div class="pcard" onclick="openProject('${p.id}')">
+      ${p.mark?`<span class="ribbon ${esc(p.mark)}"></span>`:''}
+      <button class="pmenu-btn" onclick="event.stopPropagation();toggleCardMenu('${p.id}',event)" title="더보기">⋯</button>
+      <div class="pmenu hidden" id="pm-${p.id}" onclick="event.stopPropagation()">
+        <button onclick="duplicateProject('${p.id}')">복제</button>
+        <button onclick="deleteProject('${p.id}')">삭제</button>
+        <div class="pmenu-marks">
+          ${MARK_COLORS.map(c=>`<button class="mk ${c.v}${p.mark===c.v?' on':''}" title="${c.l}" onclick="setMark('${p.id}','${c.v}')"></button>`).join('')}
+          <button class="mk none${!p.mark?' on':''}" title="표시 없음" onclick="setMark('${p.id}','')">✕</button>
+        </div>
+      </div>
       <div class="ptitle">${esc(p.title)}</div>
       <div class="pstart">${esc(p.card.start||'시작점이 아직 비어 있어요')}</div>
       <div class="prow"><div class="prog"><i style="width:${prog}%"></i></div><span class="pmeta">기획 카드 ${STEP_DEFS.filter(s=>(p.card[s.key]||'').trim()).length}/${STEP_DEFS.length}</span></div>
       <div class="pfoot">
-        ${sc!=null?`<span>${starsHTML(sc)} <span class="score-num">${sc}</span><span class="muted">/100</span>${p.scoreStale?' <span class="muted">수정됨</span>':''}</span>`:'<span class="noscore">채점 전</span>'}
-        <span>${p.label?`<span class="tag lbl">${esc(p.label)}</span>`:''}
-        <button class="del" onclick="event.stopPropagation();duplicateProject('${p.id}')" title="이 기획안을 복사해서 다른 방향으로 써봐요">복제</button>
-        <button class="del" onclick="event.stopPropagation();deleteProject('${p.id}')">삭제</button></span>
+        <span class="pscore">${sc!=null
+          ? `${starsHTML(sc)} <span class="score-num">${sc}</span>${p.label?` <span class="lblnote">${esc(p.label)}</span>`:''}${p.scoreStale?` <span class="stale">수정됨</span>`:''}`
+          : '<span class="noscore">채점 전</span>'}</span>
       </div>
     </div>`;
   }).join('');
@@ -799,6 +842,12 @@ function matToggle(id, btn){
   const open=el.classList.toggle('clamp');
   if(btn) btn.textContent = open ? '펼쳐 보기' : '접기';
 }
+// 재료 종류를 눌러서 바꾸기 (내 생각·고민 ↔ 사람·사물)
+function toggleMatType(id){
+  const m=state.materials.find(x=>x.id===id); if(!m) return;
+  m.type = m.type==='internal' ? 'external' : 'internal';
+  save(); renderMaterials();
+}
 function materialToProject(id){
   const m=state.materials.find(x=>x.id===id); if(!m) return;
   createProject(m.text.length>20?m.text.slice(0,20)+'…':m.text, m.text);
@@ -809,7 +858,7 @@ function renderMaterials(){
   if(!state.materials.length){ g.innerHTML='<div class="empty-hint">아직 주운 재료가 없어요.<br>스치는 생각을 <b>한 줄씩</b> 던져두세요.</div>'; return; }
   g.innerHTML = state.materials.map(m=>`
     <div class="mat ${m.text.length>220?'clamp':''}" id="mat-${m.id}">
-      <span class="tag ${m.type}" style="align-self:flex-start">${m.type==='internal'?'내 생각·고민':'사람·사물'}</span>
+      <button class="tag ${m.type} tagbtn" style="align-self:flex-start" onclick="toggleMatType('${m.id}')" title="누르면 종류가 바뀌어요">${m.type==='internal'?'내 생각·고민':'사람·사물'}</button>
       <p>${esc(m.text)}</p>
       ${m.text.length>220?`<button class="more" onclick="matToggle('${m.id}',this)">펼쳐 보기</button>`:''}
       <div class="foot">
@@ -847,6 +896,27 @@ function deleteProject(id){
   if(state.activeProject===id) state.activeProject=state.projects[0]?.id||null;
   save(); renderHome();
 }
+/* 카드에 색으로 표시해두기 (분류나 우선순위 용도) */
+const MARK_COLORS=[
+  {v:'red',   l:'빨강'},
+  {v:'blue',  l:'파랑'},
+  {v:'yellow',l:'노랑'},
+  {v:'green', l:'초록'},
+  {v:'black', l:'검정'},
+];
+function toggleCardMenu(id, e){
+  const box=document.getElementById('pm-'+id);
+  const wasOpen=box && !box.classList.contains('hidden');
+  document.querySelectorAll('.pmenu').forEach(m=>m.classList.add('hidden'));
+  if(box && !wasOpen) box.classList.remove('hidden');
+}
+function setMark(id, color){
+  const p=state.projects.find(x=>x.id===id); if(!p) return;
+  p.mark=color||'';
+  save(); renderHome();
+}
+document.addEventListener('click', ()=>{ document.querySelectorAll('.pmenu').forEach(m=>m.classList.add('hidden')); });
+
 /* 같은 소재로 다른 방향을 시도할 때, 기획안을 통째로 복사 */
 function duplicateProject(id){
   const src=state.projects.find(x=>x.id===id); if(!src) return;
@@ -953,15 +1023,16 @@ let growTimer=null;
 window.addEventListener('resize', ()=>{ clearTimeout(growTimer); growTimer=setTimeout(growAllTextareas, 120); });
 function renderScoreBadge(){
   const p=proj();
-  const stale = p.scoreStale ? ` <span class="muted">수정됨, 다시 채점해보세요</span>` : '';
-  const lbl = p.label ? `<span class="tag lbl">${esc(p.label)}</span> ` : '';
+  const stale = p.scoreStale ? ` <span class="stale">수정됨</span>` : '';
+  // 라벨은 AI가 본 '보는 사람의 반응'이에요. 버튼으로 오해되지 않게 담백하게 씁니다
+  const lbl = p.label ? ` <span class="lblnote" title="AI가 본 이 기획의 반응이에요">반응 · ${esc(p.label)}</span>` : '';
   const el=document.getElementById('detail-score');
   el.innerHTML = p.score!=null
-    ? `${lbl}${starsHTML(p.score)} <span class="score-num">${p.score}</span><span class="muted">/100</span>${stale}`
-    : `${lbl}<span class="muted">채점 전</span>`;
+    ? `${starsHTML(p.score)} <span class="score-num">${p.score}</span><span class="muted">/100</span>${lbl}${stale}`
+    : `<span class="muted">채점 전</span>${lbl}`;
   const ps=document.getElementById('panel-score');
   ps.innerHTML = p.score!=null
-    ? `<div class="scorebox">${starsHTML(p.score)}<div class="big">${p.score}<span style="font-size:0.9rem;color:#9c9c9c">/100</span></div>${p.scoreStale?'<div class="muted" style="margin-top:4px">수정 후 아직 다시 채점하지 않았어요</div>':''}</div>` : '';
+    ? `<div class="scorebox">${starsHTML(p.score)}<div class="big">${p.score}<span style="font-size:0.9rem;color:#9c9c9c">/100</span></div></div>` : '';
   renderGuide();
 }
 
