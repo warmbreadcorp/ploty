@@ -120,7 +120,8 @@ body.auth-locked header .util .hidden{display:none}
 .projbar{display:flex;align-items:center;gap:16px;margin-bottom:26px;flex-wrap:wrap;border-bottom:1px solid var(--ink);padding-bottom:14px}
 .projbar .back{font-weight:700;color:var(--ink-60);font-size:0.88rem}
 .projbar .back:hover{color:var(--red)}
-.projbar input.title{font-size:1.6rem;font-weight:800;letter-spacing:-0.03em;border:none;background:none;flex:1;min-width:180px;padding:0}
+.projbar textarea.title{font-size:1.6rem;font-weight:800;letter-spacing:-0.03em;border:none;background:none;flex:1;min-width:180px;padding:0;resize:none;overflow:hidden;line-height:1.25;font-family:inherit}
+.projbar textarea.title:focus{outline:none;border-bottom:1px solid var(--ink)}
 .projbar input.title:focus{outline:none}
 .score-badge{display:flex;align-items:center;gap:8px;font-size:0.95rem}
 
@@ -130,7 +131,7 @@ body.auth-locked header .util .hidden{display:none}
 .plan-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start}
 .plan-grid>*{min-width:0}
 .step textarea{max-width:100%}
-.chain .crow input{min-width:0}
+.chain .crow textarea{min-width:0}
 @media(max-width:980px){.plan-grid{grid-template-columns:1fr}}
 .step{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:18px 20px;margin-bottom:10px}
 .step .head{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
@@ -155,8 +156,8 @@ body.auth-locked header .util .hidden{display:none}
 .chain .arrow:hover{color:var(--ink)}
 .chain .arrow b{color:var(--red);font-weight:600}
 .chain .crow{display:flex;gap:6px;align-items:center}
-.chain .crow input{flex:1;border:none;border-radius:8px;background:#f5f5f5;padding:10px 13px}
-.chain .crow input:focus{outline:2px solid var(--ink)}
+.chain .crow textarea{flex:1;border:none;border-radius:8px;background:#f5f5f5;padding:10px 13px;resize:none;overflow:hidden;line-height:1.55;font-size:0.9rem}
+.chain .crow textarea:focus{outline:2px solid var(--ink)}
 .chain .crow.last input{background:#fff;border:1px solid var(--ink)}
 .chain .cx{color:var(--ink-30);font-size:0.8rem;padding:4px}
 .chain .cx:hover{color:var(--red)}
@@ -202,6 +203,8 @@ body.auth-locked header .util .hidden{display:none}
 .board{display:flex;flex-wrap:wrap;gap:10px;padding:16px 0 10px;align-items:stretch}
 .board>.bhint{width:100%;color:var(--ink-30);font-size:0.85rem;padding-bottom:6px}
 .board-actions{width:100%;display:flex;gap:8px;margin-top:4px;flex-wrap:wrap}
+#talk-input{width:100%;border:none;border-radius:10px;background:#f5f5f5;padding:12px 14px;font-size:0.92rem;line-height:1.7;resize:none;overflow:hidden;min-height:180px}
+#talk-input:focus{outline:2px solid var(--ink)}
 .digq{margin-bottom:14px}
 .digq p{font-size:0.9rem;font-weight:600;margin-bottom:6px;line-height:1.5}
 .digq textarea{width:100%;border:none;border-radius:8px;background:#f5f5f5;padding:10px 12px;resize:none;font-size:0.9rem}
@@ -351,6 +354,19 @@ body.auth-locked header .util .hidden{display:none}
 .onb .step-dot i{width:22px;height:3px;background:#e2e2e2}
 .onb .step-dot i.on{background:var(--ink)}
 .onb .row{justify-content:space-between}
+.apihelp{margin-top:14px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);white-space:normal}
+.apihelp summary{cursor:pointer;padding:11px 14px;font-size:0.85rem;font-weight:600;list-style:none;display:flex;align-items:center;gap:6px}
+.apihelp summary::-webkit-details-marker{display:none}
+.apihelp summary::before{content:'＋';color:var(--ink-30);font-weight:700}
+.apihelp[open] summary::before{content:'−'}
+.apihelp summary:hover{color:var(--red)}
+.apisteps{padding:0 14px 14px;font-size:0.84rem;line-height:1.7;white-space:normal}
+.apihelp summary{white-space:normal}
+.apisteps p{margin-bottom:9px}
+.apisteps a{color:var(--red);text-decoration:underline}
+.apisteps .warn{background:#fff4f5;border-left:3px solid var(--red);border-radius:6px;padding:9px 11px;margin:11px 0}
+.apisteps .warn b:first-child{color:var(--red)}
+.apisteps .muted{font-size:0.78rem;margin-top:11px;margin-bottom:0}
 </style>
 </head>
 <body>
@@ -414,7 +430,7 @@ body.auth-locked header .util .hidden{display:none}
   <div id="view-detail" class="hidden">
     <div class="projbar">
       <button class="back" onclick="switchView('home')">←</button>
-      <input class="title" id="detail-title" oninput="onTitle(this.value)">
+      <textarea class="title" id="detail-title" rows="1" oninput="onTitle(this.value)" onkeydown="if(event.key==='Enter')event.preventDefault()"></textarea>
       <span class="muted" id="save-ind" style="font-size:0.76rem"></span>
       <button class="btn line sm" onclick="exportPDF()">PDF 내보내기</button>
       <div class="score-badge" id="detail-score" onclick="document.querySelector('.ai-panel').scrollIntoView({behavior:'smooth',block:'center'})" style="cursor:pointer" title="AI 코치로 이동"></div>
@@ -520,7 +536,7 @@ body.auth-locked header .util .hidden{display:none}
   <div class="modal">
     <h3>말로 풀어쓰기</h3>
     <p>친구한테 이야기하듯 편하게 쭉 적어보세요. 문장을 다듬거나 순서를 맞추지 않으셔도 괜찮아요. 적으신 내용을 대본 칸에 나눠서 담아드릴게요.</p>
-    <textarea id="talk-input" rows="10" placeholder="예) 나이 드니까 겁이 많아져요. 어릴 땐 안 그랬던 것 같은데. 장래희망에 대통령도 적었고 학예회에서 개그도 따라했거든요. 근데 엄마한테 물어보니까 그때도 겁이 엄청 많았대요..."></textarea>
+    <textarea id="talk-input" rows="8" placeholder="예) 나이 드니까 겁이 많아져요. 어릴 땐 안 그랬던 것 같은데, 엄마한테 물어보니 그때도 겁이 많았대요..."></textarea>
     <div class="row" style="margin-top:12px">
       <button class="btn" id="talk-run" onclick="runTalk()">대본 칸에 담기</button>
       <button class="btn line" onclick="closeTalk()">닫기</button>
@@ -856,7 +872,7 @@ function scrollToStep(idx){
   const el=document.querySelectorAll('#steps .step')[idx];
   if(!el) return;
   el.scrollIntoView({behavior:'smooth',block:'center'});
-  const ta=el.querySelector('textarea, .chain .crow input'); if(ta) ta.focus({preventScroll:true});
+  const ta=el.querySelector('textarea'); if(ta) ta.focus({preventScroll:true});
 }
 function renderGuide(){
   const p=proj(); if(!p || !document.getElementById('guide')) return;
@@ -876,7 +892,7 @@ function renderGuide(){
 function renderDetail(){
   const p=proj();
   if(!p){ switchView('home'); return; }
-  document.getElementById('detail-title').value=p.title;
+  const tEl=document.getElementById('detail-title'); tEl.value=p.title; autoGrow(tEl);
   renderScoreBadge(); renderSteps(); renderBoard(); renderScript(); renderWhyRows(); renderGuide(); renderFB();
   growAllTextareas();
 }
@@ -975,7 +991,7 @@ function chainHTML(p){
     ${chain.map((c,i)=>`
       <button class="arrow" onclick="chainToggle(${i})" title="누르면 질문이 바뀌어요">↓ ${c.t==='why'?'<b>왜</b> 그럴까?':'<b>=</b> 바꿔 말하면'}</button>
       <div class="crow ${i===lastIdx&&i===chain.length-1?'last':''}">
-        <input value="${esc(c.v)}" placeholder="${c.t==='why'?'솔직한 이유를 적어보세요  예) 조회수가 신경쓰여':'같은 말을 더 넓게  예) 성과(숫자)가 신경쓰여'}" oninput="chainInput(${i},this)">
+        <textarea rows="1" placeholder="${c.t==='why'?'솔직한 이유를 적어보세요  예) 조회수가 신경쓰여':'같은 말을 더 넓게  예) 성과(숫자)가 신경쓰여'}" oninput="chainInput(${i},this)" onkeydown="if(event.key==='Enter')event.preventDefault()">${esc(c.v)}</textarea>
         ${chain.length>1?`<button class="cx" onclick="chainDel(${i})">✕</button>`:''}
       </div>`).join('')}
     <button class="addwhy" onclick="chainAdd()">↓ 더 파고들기</button>
@@ -997,7 +1013,7 @@ function chainAdd(){
   const p=proj(); const c=chainArr(p);
   c.push({t: c.length&&c[c.length-1].t==='why' ? 'eq' : 'why', v:''});
   save(); renderSteps();
-  const inputs=document.querySelectorAll('.chain .crow input');
+  const inputs=document.querySelectorAll('.chain .crow textarea');
   if(inputs.length) inputs[inputs.length-1].focus();
 }
 function chainDel(i){
@@ -2020,7 +2036,9 @@ const ONB_STEPS=[
 
 한 줄 적기에서 시작해서, 장면을 고르고, 대본까지 이어집니다. 막히는 곳마다 AI가 거들어드려요.
 
-이 길라잡이는 상단 '길라잡이'에서 언제든 다시 보실 수 있어요.`},
+AI 기능을 쓰시려면 <b>API 키</b>를 한 번 연결해두셔야 해요. 아래를 눌러 방법을 확인해보세요.
+
+<details class="apihelp"><summary>API 키 연결하는 방법</summary><div class="apisteps"><p><b>1.</b> <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> 에 접속해서 로그인하세요. 계정이 없으시면 가입하시면 돼요.</p><p><b>2.</b> 왼쪽 메뉴에서 <b>API Keys</b> 를 누르세요.</p><p><b>3.</b> <b>Create Key</b> 를 누르고, 이름을 적은 뒤 만드시면 돼요. 이름은 ploty 처럼 알아보기 쉬운 것으로 지으시면 됩니다.</p><p><b>4.</b> 만들어진 키를 복사하세요.</p><p class="warn"><b>!</b> 키는 만든 직후 <b>딱 한 번만</b> 보여요. 창을 닫으면 다시 볼 수 없으니, 복사해서 메모장이나 비밀번호 관리 앱에 따로 저장해두세요. 잃어버리시면 새로 만드셔야 해요.</p><p><b>5.</b> ploty 상단의 <b>설정</b>을 눌러 그 칸에 붙여넣고 <b>저장</b>을 누르시면 끝이에요.</p><p class="muted">키는 계정에 저장되어서, 다른 기기에서 로그인하셔도 따라옵니다. 사용료는 사용하신 만큼 Anthropic에 청구돼요.</p></div></details>`},
  {t:'재료함, 일단 주워두세요', b:`좋은 기획은 평소에 주워둔 재료에서 나와요.
 
 대화, 읽은 글, 뉴스, 문득 떠오른 생각.
