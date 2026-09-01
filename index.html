@@ -447,7 +447,7 @@ body.auth-locked header .util .hidden{display:none}
             <button class="thelp-btn" onclick="thelpToggle(event)" title="어떤 걸 고를까요?">?</button>
             <div class="thelp-pop hidden" id="thelp-pop">
               <p><b>2단</b>은 보는 사람의 인식을 비포에서 애프터로 바꾸는 구조예요. 같은 상황인데, 해석을 듣고 나면 다르게 보여요.<br><span class="muted">예) 나이 들수록 겁만 많아져요 → 용감했던 어린 시절에도 사실 겁은 났었죠, 떨면서도 그냥 했을 뿐. 용기는 겁이 없는 게 아니라, 겁이 나도 하는 거였어요</span></p>
-              <p><b>3막</b>은 사건이 벌어지는 이야기예요. 문제가 생기고 풀리는 과정을 따라가다가, 해결에서 메시지가 느껴지게 해요.<br><span class="muted">예) 퇴사하고 첫 영상을 올렸어요(설정) → 조회수 32회, 그만둘까 했어요(대립) → 댓글 하나에 다시 앉았어요. 계속할 이유는 숫자가 아니더라고요(해결)</span></p>
+              <p><b>3막</b>은 사건이 벌어지는 이야기예요. 문제가 생기고 풀리는 과정을 따라가다가, 해결에서 메시지가 느껴지게 해요.<br><span class="muted">예) 퇴사하고 첫 영상을 올렸어요(설정) → 조회수 32회, 그만둘까 싶었죠(대립) → 근데 그중 한 명이 댓글을 남겼더라고요. 그 한 명 때문에 다음 영상을 찍었습니다(해결)</span></p>
               <p class="muted" style="margin:0">고민되면 2단으로 시작해보세요.</p>
             </div>
           </div>
@@ -861,9 +861,8 @@ function renderSteps(){
       ${benefitTypes}
       <div class="tools">
         <div style="flex:1"></div>
-        ${s.key!=='decompose'?`<button class="btn line sm" id="ten-${s.key}" onclick="runTenVersions('${s.key}')" ${val.trim()?'':'disabled'} title="쓴 문장을 열 가지 표현으로 굴려봐요">다르게 써보기</button>`:''}
-        <button class="btn line sm" id="ref-${s.key}" onclick="runRefine('${s.key}')" ${val.trim()?'':'disabled'}>다듬기</button>
-        <button class="btn sm" id="sug-${s.key}" onclick="runSuggest('${s.key}')">AI 추천받기</button>
+        <button class="btn line sm" id="ref-${s.key}" onclick="runRefine('${s.key}')" ${val.trim()?'':'disabled'} title="내가 쓴 문장을 여러 표현으로 다시 써봐요">다시 써보기</button>
+        <button class="btn sm" id="sug-${s.key}" onclick="runSuggest('${s.key}')" title="빈 칸을 채울 후보를 새로 받아봐요">AI 추천받기</button>
       </div>
       <div class="cands" id="cands-${s.key}"></div>
     </div>`;
@@ -1319,34 +1318,17 @@ async function runRefine(key){
       }).join('') + hint;
     } else {
       const raw=await callClaude(cardContext()+`\n\n사용자가 "${REFINE_LABEL[key]}" 칸에 쓴 내용: "${p.card[key]}"
-이 내용을 검토해서 다듬은 버전 3개를 제안해줘. 뜻과 의도는 그대로 두고, 더 명확하고 구체적으로. 말맛이 살아있게.
+이 내용을 6가지 버전으로 다시 써줘. 뜻과 의도는 그대로 두고 표현만 바꾼다.
+앞의 3개는 원문에 가깝게 다듬은 안전한 버전, 뒤의 3개는 표현을 확 바꾼 과감한 버전으로.
+명확한가(의미 전달), 와닿는가(감정 전달), 깔끔한가(군더더기 없음)를 기준으로 삼아.
 why에는 원문에서 뭘 왜 바꿨는지 한 줄로.
-반드시 JSON 배열만 출력: [{"text":"다듬은 버전","why":"바꾼 이유 한 줄"}]`);
+반드시 JSON 배열만 출력: [{"text":"다시 쓴 문장","why":"바꾼 이유 한 줄"}]`, 2500);
       let list; try{ list=parseJSONBlock(raw,true); }catch(e){ list=[{text:raw,why:''}]; }
       document.getElementById('cands-'+key).innerHTML = list.map(c=>`
         <div class="cand" onclick="applyCand('${key}', this)"><span>${esc(c.text)}</span><small>${esc(c.why||'')}</small></div>`).join('') + hint;
     }
   }catch(e){ alert(e.message); }
   busy('ref-'+key,false);
-}
-/* --- 10버전: 같은 문장을 열 가지로 굴려보기 (2강 AI 활용법) --- */
-async function runTenVersions(key){
-  if(isBusy('ten-'+key)) return;
-  const p=proj();
-  const val=(p.card[key]||'').trim();
-  if(!val) return;
-  busy('ten-'+key,true);
-  try{
-    const hint=`<div class="muted" style="margin-top:4px">마음에 드는 버전을 클릭하면 칸에 들어가요</div>`;
-    const raw=await callClaude(cardContext()+`\n\n사용자가 쓴 이 문장을 10개 버전으로 적어줘: "${val}"
-뜻은 유지하되 표현을 조금씩 다르게. 절반은 안전하게 다듬은 버전, 절반은 결이 다른 과감한 버전으로.
-명확한가(의미 전달), 와닿는가(감정 전달), 깔끔한가(군더더기 없음)를 기준으로 삼아.
-반드시 JSON 배열만 출력: [{"text":"버전 문장"}]`, 2000);
-    let list; try{ list=parseJSONBlock(raw,true); }catch(e){ list=[]; }
-    document.getElementById('cands-'+key).innerHTML = list.slice(0,10).map(c=>`
-      <div class="cand" onclick="applyCand('${key}', this)"><span>${esc(c.text||'')}</span></div>`).join('') + hint;
-  }catch(e){ alert(e.message); }
-  busy('ten-'+key,false);
 }
 function applyChainCand(el){
   const p=proj();
@@ -1555,11 +1537,21 @@ async function runScriptPart(gkey){
   busy(id,true);
   try{
     const raw=await callClaude(cardContext()+`\n\n위 대본에서 '${g.label}' 부분(${g.gd})만 다시 써줘.
-나머지 부분의 흐름·말투와 자연스럽게 이어져야 해. 최대 ${g.count}문장, 구어체, 메시지를 직접 설교하지 말 것.
-반드시 JSON만 출력: {"lines":["문장1","문장2"]}`, 1500);
+나머지 부분의 흐름·말투와 자연스럽게 이어져야 해. 정확히 ${g.count}문장, 구어체, 메시지를 직접 설교하지 말 것.
+반드시 JSON만 출력: {"lines":["문장1","문장2"]}`, 2500);
     const o=parseJSONBlock(raw,false);
-    s.lines[gkey]=Array.from({length:g.count},(_,i)=>(o.lines&&o.lines[i])||'');
-    save(); renderScript();
+    // 키 이름이 달라도 읽어냄 (lines / 그룹키 / 배열 자체)
+    let arr = Array.isArray(o) ? o : (o.lines || o[gkey] || o[g.label]);
+    if(!Array.isArray(arr)){
+      const firstArr = Object.values(o||{}).find(v=>Array.isArray(v) && v.length && typeof v[0]==='string');
+      arr = firstArr;
+    }
+    arr = (arr||[]).filter(x=>typeof x==='string' && x.trim());
+    if(!arr.length){ alert('AI 응답을 읽지 못했어요. 쓰신 대본은 그대로 두었어요. 한 번 더 눌러보세요.'); }
+    else {
+      s.lines[gkey]=Array.from({length:g.count},(_,i)=>arr[i]||'');
+      save(); renderScript();
+    }
   }catch(e){ alert(e.message); }
   busy(id,false);
 }
