@@ -432,6 +432,7 @@ body.auth-locked header .util .hidden{display:none}
       <button class="back" onclick="switchView('home')">←</button>
       <textarea class="title" id="detail-title" rows="1" oninput="onTitle(this.value)" onkeydown="if(event.key==='Enter')event.preventDefault()"></textarea>
       <span class="muted" id="save-ind" style="font-size:0.76rem"></span>
+      <button class="btn line sm" onclick="duplicateProject(proj().id)" title="이 기획안을 복사해서 다른 방향으로 써봐요">복제</button>
       <button class="btn line sm" onclick="exportPDF()">PDF 내보내기</button>
       <div class="score-badge" id="detail-score" onclick="document.querySelector('.ai-panel').scrollIntoView({behavior:'smooth',block:'center'})" style="cursor:pointer" title="AI 코치로 이동"></div>
     </div>
@@ -770,6 +771,7 @@ function renderHome(){
       <div class="pfoot">
         ${sc!=null?`<span>${starsHTML(sc)} <span class="score-num">${sc}</span><span class="muted">/100</span>${p.scoreStale?' <span class="muted">수정됨</span>':''}</span>`:'<span class="noscore">채점 전</span>'}
         <span>${p.label?`<span class="tag lbl">${esc(p.label)}</span>`:''}
+        <button class="del" onclick="event.stopPropagation();duplicateProject('${p.id}')" title="이 기획안을 복사해서 다른 방향으로 써봐요">복제</button>
         <button class="del" onclick="event.stopPropagation();deleteProject('${p.id}')">삭제</button></span>
       </div>
     </div>`;
@@ -844,6 +846,31 @@ function deleteProject(id){
   state.projects=state.projects.filter(x=>x.id!==id);
   if(state.activeProject===id) state.activeProject=state.projects[0]?.id||null;
   save(); renderHome();
+}
+/* 같은 소재로 다른 방향을 시도할 때, 기획안을 통째로 복사 */
+function duplicateProject(id){
+  const src=state.projects.find(x=>x.id===id); if(!src) return;
+  let copy; try{ copy=JSON.parse(JSON.stringify(src)); }catch(e){ alert('복제하지 못했어요.'); return; }
+  copy.id=uid();
+  copy.createdAt=Date.now();
+  const base=(src.title||'무제').replace(/\s*\(사본( \d+)?\)$/,'');
+  let n=1, title=base+' (사본)';
+  while(state.projects.some(x=>x.title===title)){ n++; title=base+' (사본 '+n+')'; }
+  copy.title=title;
+  // 장면과 대본 버전은 새 번호를 받아야 원본과 섞이지 않아요
+  Object.keys(copy.beats||{}).forEach(k=>{
+    copy.beats[k]=(copy.beats[k]||[]).map(b=>({...b, id:uid()}));
+  });
+  const idMap={};
+  copy.scripts=(copy.scripts||[]).map(s=>{ const nid=uid(); idMap[s.id]=nid; return {...s, id:nid}; });
+  copy.activeScript=idMap[src.activeScript]||(copy.scripts[0]&&copy.scripts[0].id)||null;
+  if(copy.score!=null) copy.scoreStale=true; // 방향을 바꿀 테니 다시 채점하도록 표시
+  state.projects.unshift(copy);
+  state.activeProject=copy.id;
+  save();
+  switchView('detail');
+  const t=document.getElementById('detail-title');
+  if(t){ t.focus(); t.setSelectionRange(t.value.length, t.value.length); }
 }
 function onTitle(v){ const p=proj(); if(p){ p.title=v; save(); } }
 
