@@ -201,13 +201,24 @@ body.auth-locked header .util .hidden{display:none}
 .tmpl-pick button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,0.1)}
 .board{display:flex;flex-wrap:wrap;gap:10px;padding:16px 0 10px;align-items:stretch}
 .board>.bhint{width:100%;color:var(--ink-30);font-size:0.85rem;padding-bottom:6px}
-.board-actions{width:100%;display:flex;gap:8px;margin-top:4px}
+.board-actions{width:100%;display:flex;gap:8px;margin-top:4px;flex-wrap:wrap}
+.digq{margin-bottom:14px}
+.digq p{font-size:0.9rem;font-weight:600;margin-bottom:6px;line-height:1.5}
+.digq textarea{width:100%;border:none;border-radius:8px;background:#f5f5f5;padding:10px 12px;resize:none;font-size:0.9rem}
+.digq textarea:focus{outline:2px solid var(--ink)}
+.digc{border:1px solid var(--rule);border-radius:8px;padding:11px 13px;margin-bottom:7px;cursor:pointer;background:var(--paper)}
+.digc:hover{border-color:var(--ink)}
+.digc span{display:block;font-size:0.9rem;line-height:1.5}
+.digc small{display:block;margin-top:4px;font-size:0.74rem;color:var(--ink-30)}
+.digc.used{opacity:0.45;cursor:default;background:#f0f0f0}
+.digc.used span::after{content:' ✓ 담았어요';font-size:0.74rem;color:var(--red);font-weight:600}
 .lane{min-width:230px;flex:1;background:var(--paper);border:1px solid var(--rule);border-radius:12px;display:flex;flex-direction:column;gap:9px;padding:0 10px 10px}
 .lane.dragover{border-color:var(--red)}
 .lane .lhead{border-bottom:1px solid var(--ink);margin:0 2px 2px;padding:11px 2px 9px}
 .lane .lhead .ltitle{font-weight:700;font-size:0.85rem;display:flex;justify-content:space-between;align-items:baseline;letter-spacing:0.02em}
 .lane .lhead .ltime{color:var(--ink-30);font-size:0.72rem;font-weight:600}
 .lane .lhint{font-size:0.74rem;color:var(--ink-30);padding:0 2px}
+.lane .lfeel{font-size:0.74rem;color:var(--red);font-weight:600;padding:0 2px}
 .beat{background:var(--dark-card);color:#fff;border-radius:8px;padding:11px 76px 11px 12px;font-size:0.87rem;cursor:grab;position:relative;line-height:1.5}
 .beat.dragging{opacity:0.4}
 .beat .bicons{position:absolute;top:7px;right:9px;display:flex;gap:9px}
@@ -244,6 +255,13 @@ body.auth-locked header .util .hidden{display:none}
 .sline{display:flex;gap:10px;align-items:flex-start;margin-bottom:6px}
 .sline .n{padding-top:9px}
 .sline .lwrap{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+.linerow{display:flex;gap:6px;align-items:center;min-width:0}
+.linerow input{flex:1;min-width:0}
+.lfix{opacity:0;pointer-events:none;flex-shrink:0;font-size:0.72rem;font-weight:600;color:var(--ink-30);border:1px solid var(--rule);border-radius:6px;padding:6px 9px;background:var(--paper);transition:opacity .12s}
+.linerow:focus-within .lfix,.lfix.on{opacity:1;pointer-events:auto}
+.lfix:hover{color:var(--ink);border-color:var(--ink)}
+.lcands:not(:empty){margin:2px 0 8px}
+.lcands .cand{margin-bottom:5px;font-size:0.85rem}
 .sline .conti{border:none;border-radius:6px;background:#ececec;padding:7px 12px;font-size:0.78rem;color:var(--ink-60)}
 .sline .conti:focus{outline:1.5px solid var(--ink);color:var(--ink)}
 .sline .n{width:22px;text-align:right;font-size:0.72rem;font-weight:500;color:var(--ink-30)}
@@ -473,6 +491,7 @@ body.auth-locked header .util .hidden{display:none}
       </div>
       <div style="flex:1"></div>
       <button class="btn line" id="btn-script-toggle" onclick="toggleScript()">열기</button>
+      <button class="btn line hidden" id="btn-talk" onclick="openTalk()">말로 풀어쓰기</button>
       <button class="btn line hidden" id="btn-conti" onclick="toggleConti()">화면 메모</button>
       <button class="btn hidden" id="btn-conti-ai" onclick="runContiSuggest()">화면 제안</button>
       <button class="btn hidden" id="btn-script" onclick="runScriptDraft()">AI 초안 추가</button>
@@ -494,6 +513,32 @@ body.auth-locked header .util .hidden{display:none}
 </div>
 
 <!-- 설정 모달 -->
+<!-- 말로 풀어쓰기: 친구에게 얘기하듯 쓰면 20문장 틀에 나눠 담아줌 -->
+<div id="modal-talk" class="modal-bg hidden" onclick="if(event.target===this)closeTalk()">
+  <div class="modal">
+    <h3>말로 풀어쓰기</h3>
+    <p>친구한테 이야기하듯 편하게 쭉 적어보세요. 문장을 다듬거나 순서를 맞추지 않으셔도 괜찮아요. 적으신 내용을 대본 칸에 나눠서 담아드릴게요.</p>
+    <textarea id="talk-input" rows="10" placeholder="예) 나이 드니까 겁이 많아져요. 어릴 땐 안 그랬던 것 같은데. 장래희망에 대통령도 적었고 학예회에서 개그도 따라했거든요. 근데 엄마한테 물어보니까 그때도 겁이 엄청 많았대요..."></textarea>
+    <div class="row" style="margin-top:12px">
+      <button class="btn" id="talk-run" onclick="runTalk()">대본 칸에 담기</button>
+      <button class="btn line" onclick="closeTalk()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 소재 찾기: 질문에 답하면서 진짜 기억을 꺼내는 곳 -->
+<div id="modal-dig" class="modal-bg hidden" onclick="if(event.target===this)closeDig()">
+  <div class="modal">
+    <h3>소재 찾기</h3>
+    <p id="dig-desc">기억을 꺼내는 질문을 드릴게요. 떠오르는 대로 짧게 답하시면, 그중에서 영상에 쓸 만한 장면을 골라드립니다.</p>
+    <div id="dig-body"></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" id="dig-primary" onclick="digPrimary()">질문 받기</button>
+      <button class="btn line" onclick="closeDig()">닫기</button>
+    </div>
+  </div>
+</div>
+
 <div id="modal-settings" class="modal-bg hidden" onclick="if(event.target===this)closeSettings()">
   <div class="modal">
     <h3>설정</h3>
@@ -820,7 +865,7 @@ function renderGuide(){
   window.__guideAct=t.act;
   const hasCard=cardHasContent();
   const hasBeats=Object.values(p.beats).some(a=>a.length);
-  [['btn-feedback',hasCard],['btn-short',hasCard],['btn-structgen',hasCard],['btn-structcmp',hasBeats],['btn-script',hasCard],['btn-why-ai',hasCard]].forEach(([id,ok])=>{
+  [['btn-feedback',hasCard],['btn-short',hasCard],['btn-structgen',hasCard],['btn-structcmp',hasBeats],['btn-script',hasCard],['btn-why-ai',hasCard],['btn-dig',hasCard]].forEach(([id,ok])=>{
     const b=document.getElementById(id);
     if(b && b.dataset.busy!=='1') b.disabled=!ok;
   });
@@ -1014,14 +1059,16 @@ function renderBoard(){
     bs.textContent = isEmpty ? '기획을 장면 카드로 쪼개 순서를 잡는 곳이에요.'
       : (touch ? '카드의 화살표로 순서를 바꾸고, 연필을 누르면 수정돼요.' : '카드를 드래그해서 순서를 바꾸고, 더블클릭하면 수정돼요.');
   }
-  const emptyHint = isEmpty ? `<div class="bhint">아직 장면이 없어요. 구조를 고르고 초안을 만들어보세요.<div style="margin-top:10px"><button class="btn" id="btn-structgen" onclick="runStructGen()">플롯 초안 만들기</button></div></div>`:'';
-  const actions = isEmpty ? '' : `<div class="board-actions"><button class="btn line" id="btn-structgen" onclick="runStructGen()">플롯 초안 다시 만들기</button><button class="btn line" id="btn-structcmp" onclick="runStructCompare()">순서 비교하기</button></div>`;
+  const emptyHint = isEmpty ? `<div class="bhint">아직 장면이 없어요. 구조를 고르고 초안을 만들어보세요.<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="btn-structgen" onclick="runStructGen()">플롯 초안 만들기</button><button class="btn line" id="btn-dig" onclick="openDig()">소재 찾기</button></div></div>`:'';
+  const actions = isEmpty ? '' : `<div class="board-actions"><button class="btn line" id="btn-structgen" onclick="runStructGen()">플롯 초안 다시 만들기</button><button class="btn line" id="btn-dig" onclick="openDig()">소재 찾기</button><button class="btn line" id="btn-structcmp" onclick="runStructCompare()">순서 비교하기</button></div>`;
   document.getElementById('board').innerHTML = emptyHint + TEMPLATES[p.template].sections.map(s=>`
     <div class="lane" data-sec="${s.key}" ondragover="laneOver(event)" ondragleave="laneLeave(event)" ondrop="laneDrop(event)">
       <div class="lhead">
         <div class="ltitle"><span>${s.label}</span><span class="ltime">${s.time||''}</span></div>
       </div>
-      <div class="lhint">${s.hint}</div>
+      ${whyGet(p,s.key).feel.trim()
+        ? `<div class="lfeel">${esc(whyGet(p,s.key).feel.trim())}</div>`
+        : `<div class="lhint">${s.hint}</div>`}
       ${(p.beats[s.key]||[]).map(b=>`
         <div class="beat" draggable="true" data-id="${b.id}"
              ondragstart="beatDragStart(event)" ondragend="beatDragEnd(event)"
@@ -1154,6 +1201,7 @@ function renderScript(){
   const p=proj(); const s=activeScript();
   document.getElementById('btn-script-toggle').textContent = scriptOpen?'접기':'열기';
   document.getElementById('btn-script').classList.toggle('hidden', !scriptOpen);
+  document.getElementById('btn-talk').classList.toggle('hidden', !scriptOpen);
   document.getElementById('btn-conti').classList.toggle('hidden', !scriptOpen);
   document.getElementById('btn-conti').textContent = contiOpen?'화면 메모 닫기':'화면 메모';
   document.getElementById('btn-conti-ai').classList.toggle('hidden', !scriptOpen || !contiOpen);
@@ -1177,7 +1225,11 @@ function renderScript(){
       ${s.lines[g.key].map((l,i)=>`
         <div class="sline"><span class="n">${i+1}</span>
           <div class="lwrap">
-            <input value="${esc(l)}" ${i===0&&g.ex?`placeholder="${esc(g.ex)}"`:''} oninput="onLine('${g.key}',${i},this.value)">
+            <div class="linerow">
+              <input value="${esc(l)}" ${i===0&&g.ex?`placeholder="${esc(g.ex)}"`:''} oninput="onLine('${g.key}',${i},this.value)" onfocus="lineFocus('${g.key}',${i})">
+              <button class="lfix" id="lfix-${g.key}-${i}" onclick="runLineFix('${g.key}',${i})" title="이 문장을 여러 표현으로 다시 써봐요">다시</button>
+            </div>
+            <div class="lcands" id="lc-${g.key}-${i}"></div>
             ${contiOpen?`<input class="conti" value="${esc(contiArr(s,g)[i]||'')}" placeholder="예) 어릴 때 사진에 손그림 CG" oninput="onConti('${g.key}',${i},this.value)">`:''}
           </div></div>`).join('')}
     </div>`).join('');
@@ -1189,6 +1241,45 @@ function delScript(id){
   save(); renderScript();
 }
 function onLine(g,i,v){ activeScript().lines[g][i]=v; save(); }
+// 문장을 누르면 그 줄에만 '다시' 버튼이 보이게 (터치 기기 대응)
+function lineFocus(g,i){
+  document.querySelectorAll('.lfix.on').forEach(b=>b.classList.remove('on'));
+  const b=document.getElementById('lfix-'+g+'-'+i); if(b) b.classList.add('on');
+}
+/* 문장 하나를 세 기준(명확·와닿음·깔끔)으로 다시 써보기 */
+async function runLineFix(g,i){
+  const id='lfix-'+g+'-'+i;
+  if(isBusy(id)) return;
+  const s=activeScript();
+  const cur=(s.lines[g][i]||'').trim();
+  if(!cur){ alert('먼저 이 칸에 문장을 적어주세요.'); return; }
+  const grp=SCRIPT_GROUPS.find(x=>x.key===g);
+  busy(id,true);
+  try{
+    const raw=await callClaude(cardContext()+`\n\n대본의 '${grp.label}' 부분에 있는 이 문장을 5가지로 다시 써줘: "${cur}"
+
+세 가지를 기준으로 본다.
+- 명확한가: 뜻이 한 번에 전달되는가
+- 와닿는가: 전하려는 감정이 실제로 전해지는가
+- 깔끔한가: 이해에 필요 없는 말이 없는가
+말하듯이, 입에 붙는 짧은 문장으로. 뜻은 유지하되 표현을 바꾼다.
+반드시 JSON 배열만 출력: [{"text":"다시 쓴 문장"}]`, 1500);
+    let list; try{ list=parseJSONBlock(raw,true); }catch(e){ list=[]; }
+    list=(list||[]).map(c=>typeof c==='string'?{text:c}:c).filter(c=>c&&c.text);
+    const box=document.getElementById('lc-'+g+'-'+i);
+    if(!box) return;
+    box.innerHTML = list.length
+      ? list.slice(0,5).map(c=>`<div class="cand" onclick="applyLineCand('${g}',${i},this)"><span>${esc(c.text)}</span></div>`).join('')
+        + `<div class="muted" style="font-size:0.75rem">마음에 드는 문장을 누르면 바뀌어요</div>`
+      : `<div class="muted" style="font-size:0.75rem">다시 써주지 못했어요. 한 번 더 눌러주세요.</div>`;
+  }catch(e){ alert(e.message); }
+  busy(id,false);
+}
+function applyLineCand(g,i,el){
+  const t=el.querySelector('span').innerText;
+  activeScript().lines[g][i]=t;
+  save(); renderScript();
+}
 
 /* ============================================================
    Claude API (Fable 5)
@@ -1501,18 +1592,43 @@ async function runStructGen(){
   try{
     const p=proj();
     const secs=TEMPLATES[p.template].sections;
-    const raw=await callClaude(cardContext()+`\n\n기획 카드를 바탕으로 ${TEMPLATES[p.template].name} 구조 초안의 장면을 만들어줘.
-구간에 역할(전할 내용, 느끼게 할 감정)이 적혀 있으면 그 역할을 다하는 장면으로 구성해.
-각 구간에 1~3개의 장면(한 덩어리의 이야기, 각 1문장). 반드시 JSON만 출력하고, 키 이름은 아래 영문 키를 글자 그대로 쓸 것:
-{${secs.map(s=>`"${s.key}":["장면1","장면2"]`).join(',')}}`);
+    // 먼저 구간마다 역할(정보+감각)을 낙차 있게 정하고, 그 역할에 맞는 장면을 만든다
+    const raw=await callClaude(cardContext()+`\n\n기획 카드를 바탕으로 ${TEMPLATES[p.template].name} 구조 초안을 만들어줘.
+
+먼저 구간마다 역할을 정한다.
+- info(전할 내용): 이 구간에서 무엇을 보여주는가
+- feel(느끼게 할 기분): 이 구간에서 보는 사람이 어떤 기분이어야 하는가. 짧은 감각어로.
+
+가장 중요한 규칙: 구간마다 기분이 달라야 한다. 상황 구간은 가볍고 웃기게 시작해서, 해석 구간에서 뒤집어 뭉클하거나 존경스럽게 만든다. 처음부터 끝까지 진지하면 지루해진다.
+뒤집을 때는 새 소재를 가져오지 말고, 앞에서 웃음거리로 쓴 그 대상을 다시 보게 만든다.
+장면은 추상어("행복은 작은 데 있다") 대신 구체적이고 사소한 것("믹스커피 뽑는데 20초")으로 쓴다.
+이미 역할이 적혀 있는 구간은 그 역할을 그대로 존중하고 장면만 만든다.
+
+각 구간에 1~3개의 장면(한 덩어리의 이야기, 각 1문장).
+반드시 JSON만 출력하고, 키 이름은 아래 영문 키를 글자 그대로 쓸 것:
+{${secs.map(s=>`"${s.key}":{"info":"전할 내용","feel":"느끼게 할 기분","scenes":["장면1","장면2"]}`).join(',')}}`, 3500);
     const obj=parseJSONBlock(raw,false);
+    if(!p.why) p.why={};
     let wrote=0;
     secs.forEach(s=>{
-      const arr=pickSectionArr(obj, s);
-      if(arr && arr.length){ p.beats[s.key]=arr.map(t=>({id:uid(),text:String(t)})); wrote++; }
+      const node=pickSectionNode(obj, s);
+      if(!node) return;
+      // 장면
+      const arr=Array.isArray(node) ? node : (node.scenes||node.beats||node.장면);
+      if(Array.isArray(arr) && arr.length){
+        p.beats[s.key]=arr.filter(t=>t&&String(t).trim()).map(t=>({id:uid(),text:String(t)}));
+        wrote++;
+      }
+      // 역할은 비어 있을 때만 채운다 (사용자가 쓴 것을 덮지 않게)
+      if(!Array.isArray(node)){
+        const cur=whyGet(p,s.key);
+        if(!cur.info && node.info) cur.info=String(node.info);
+        if(!cur.feel && node.feel) cur.feel=String(node.feel);
+        p.why[s.key]=cur;
+      }
     });
     if(!wrote){ alert('AI 응답을 읽지 못했어요. 한 번 더 눌러주세요.'); }
-    markStale(); save(); renderBoard();
+    markStale(); save(); renderBoard(); renderWhyRows();
   }catch(e){ alert(e.message); }
   busy('btn-structgen',false);
 }
@@ -1528,15 +1644,132 @@ const SEC_ALT={
   resolve:['resolve','3막','해결','act3','act_3','resolution'],
 };
 function pickSectionArr(obj, sec){
+  const node=pickSectionNode(obj, sec);
+  if(Array.isArray(node)) return node;
+  if(node){ const a=node.scenes||node.beats||node.장면; if(Array.isArray(a)) return a; }
+  return null;
+}
+/* 구간에 해당하는 값을 찾음. 배열이든 {info,feel,scenes} 객체든 그대로 돌려줌 */
+function pickSectionNode(obj, sec){
+  if(!obj || typeof obj!=='object') return null;
+  const ok=v=>Array.isArray(v) || (v && typeof v==='object');
   const cands=[sec.key, ...(SEC_ALT[sec.key]||[]), sec.label];
   const keys=Object.keys(obj);
   for(const c of cands){
-    if(Array.isArray(obj[c])) return obj[c];
-    const found=keys.find(k=>k.toLowerCase().replace(/\s/g,'').includes(String(c).toLowerCase().replace(/\s/g,'')));
-    if(found && Array.isArray(obj[found])) return obj[found];
+    if(ok(obj[c])) return obj[c];
+    const norm=String(c).toLowerCase().replace(/\s/g,'');
+    const found=keys.find(k=>k.toLowerCase().replace(/\s/g,'').includes(norm));
+    if(found && ok(obj[found])) return obj[found];
   }
   return null;
 }
+/* --- 소재 찾기: 질문 → 답 → 장면 후보 (진짜 기억에서 디테일을 꺼내는 방식) --- */
+let digState={step:'idle', questions:[], answers:[], cands:[]};
+function openDig(){
+  if(!cardHasContent()){ alert('기획 카드가 아직 비어 있어요. 시작점부터 채워주세요.'); return; }
+  digState={step:'idle', questions:[], answers:[], cands:[]};
+  document.getElementById('dig-desc').textContent='기억을 꺼내는 질문을 드릴게요. 떠오르는 대로 짧게 답하시면, 그중에서 영상에 쓸 만한 장면을 골라드립니다.';
+  document.getElementById('dig-body').innerHTML='';
+  const b=document.getElementById('dig-primary');
+  b.textContent='질문 받기'; b.disabled=false;
+  document.getElementById('modal-dig').classList.remove('hidden');
+}
+function closeDig(){ document.getElementById('modal-dig').classList.add('hidden'); }
+function digPrimary(){
+  if(digState.step==='idle') runDigQuestions();
+  else if(digState.step==='answering') runDigScenes();
+  else if(digState.step==='picking') closeDig();
+}
+async function runDigQuestions(){
+  if(isBusy('dig-primary')) return;
+  busy('dig-primary',true);
+  try{
+    const raw=await callClaude(cardContext()+`\n\n이 기획을 재미있게 만들 소재를 사용자에게서 끌어내려고 해. 사용자가 답할 질문 5개를 만들어줘.
+
+좋은 질문의 조건:
+- 사용자 본인만 아는 진짜 기억을 꺼내게 한다. 일반론이 아니라 구체적인 한 장면을 묻는다.
+- 웃긴 디테일이 나올 만한 곳을 노린다. 창피했던 순간, 남이 한 말, 사소한 습관, 숫자로 남은 기억.
+- 답하기 쉬워야 한다. 한 문장으로 답할 수 있는 질문으로.
+- 질문은 반드시 온전한 존댓말로 끝맺는다. "~하셨나요?", "~있으신가요?", "~적어보세요." 처럼. 말끝을 자르지 않는다.
+
+좋은 질문 예시: "그때 옆에 있던 사람이 뭐라고 했는지 기억나시나요? 그 말을 그대로 적어보세요." / "숫자로 기억나는 것이 있으신가요? 몇 분이 걸렸는지, 몇 개였는지 같은 것들이요."
+반드시 JSON 배열만 출력: ["질문1","질문2","질문3","질문4","질문5"]`, 1500);
+    let list; try{ list=parseJSONBlock(raw,true); }catch(e){ list=[]; }
+    list=(list||[]).map(q=>typeof q==='string'?q:(q&&q.text)||'').filter(q=>q&&q.trim()).slice(0,5);
+    if(!list.length){ alert('질문을 받지 못했어요. 한 번 더 눌러주세요.'); busy('dig-primary',false); return; }
+    digState.step='answering'; digState.questions=list; digState.answers=list.map(()=>'');
+    renderDig();
+  }catch(e){ alert(e.message); }
+  busy('dig-primary',false);
+}
+function digAnswer(i,v){ digState.answers[i]=v; }
+function renderDig(){
+  const el=document.getElementById('dig-body');
+  const b=document.getElementById('dig-primary');
+  if(digState.step==='answering'){
+    document.getElementById('dig-desc').textContent='떠오르는 것만 답하셔도 괜찮아요. 빈칸이 있어도 넘어갈 수 있어요.';
+    el.innerHTML=digState.questions.map((q,i)=>`
+      <div class="digq"><p>${esc(q)}</p>
+        <textarea rows="2" oninput="digAnswer(${i},this.value)" placeholder="떠오르는 대로 짧게 적어보세요">${esc(digState.answers[i]||'')}</textarea></div>`).join('');
+    b.textContent='답변으로 장면 만들기';
+  } else if(digState.step==='picking'){
+    document.getElementById('dig-desc').textContent='답변에서 찾은 장면이에요. 쓰고 싶은 것을 눌러서 플롯에 담아보세요.';
+    el.innerHTML=digState.cands.length
+      ? digState.cands.map((c,i)=>`
+        <div class="digc ${c.used?'used':''}" onclick="digPick(${i},this)">
+          <span>${esc(c.text)}</span>
+          <small>${esc(SEC_LABEL(c.sec))}${c.why?' · '+esc(c.why):''}</small>
+        </div>`).join('')
+      : '<p class="muted">쓸 만한 장면을 찾지 못했어요. 답변을 조금 더 적고 다시 눌러보세요.</p>';
+    b.textContent='닫기';
+  }
+}
+function SEC_LABEL(key){
+  const p=proj(); if(!p) return '';
+  const s=TEMPLATES[p.template].sections.find(x=>x.key===key);
+  return s?s.label:'';
+}
+async function runDigScenes(){
+  if(isBusy('dig-primary')) return;
+  const filled=digState.questions.map((q,i)=>({q, a:(digState.answers[i]||'').trim()})).filter(x=>x.a);
+  if(!filled.length){ alert('답변을 하나 이상 적어주세요.'); return; }
+  busy('dig-primary',true);
+  try{
+    const p=proj();
+    const secs=TEMPLATES[p.template].sections;
+    const raw=await callClaude(cardContext()+`\n\n사용자가 질문에 이렇게 답했어:
+${filled.map(x=>`Q: ${x.q}\nA: ${x.a}`).join('\n\n')}
+
+이 답변에서 영상에 쓸 장면 후보를 6~8개 뽑아줘.
+- 사용자가 실제로 말한 디테일을 그대로 살린다. 없는 내용을 지어내지 않는다.
+- 추상적으로 요약하지 말고 구체적인 장면으로 쓴다. "힘들었다" 대신 "라면 물 올려놓고 20분을 멍하니 서 있었다"처럼.
+- sec에는 이 장면이 들어갈 구간의 영문 키를 적는다. 쓸 수 있는 키: ${secs.map(s=>s.key).join(', ')}
+- 웃긴 것과 뭉클한 것을 섞는다. 앞 구간에는 가볍고 웃긴 것, 뒷 구간에는 뒤집히는 것.
+- why에는 이 장면이 좋은 이유를 아주 짧게.
+반드시 JSON 배열만 출력: [{"text":"장면 한 줄","sec":"구간키","why":"짧은 이유"}]`, 2500);
+    let list; try{ list=parseJSONBlock(raw,true); }catch(e){ list=[]; }
+    const keys=secs.map(s=>s.key);
+    digState.cands=(list||[]).filter(c=>c&&c.text).map(c=>({
+      text:String(c.text),
+      sec: keys.includes(c.sec)?c.sec:keys[1]||keys[0],
+      why: c.why?String(c.why):'',
+      used:false
+    }));
+    digState.step='picking';
+    renderDig();
+  }catch(e){ alert(e.message); }
+  busy('dig-primary',false);
+}
+function digPick(i, el){
+  const c=digState.cands[i]; if(!c || c.used) return;
+  const p=proj(); if(!p) return;
+  if(!p.beats[c.sec]) p.beats[c.sec]=[];
+  p.beats[c.sec].push({id:uid(), text:c.text});
+  c.used=true;
+  if(el) el.classList.add('used');
+  markStale(); save(); renderBoard();
+}
+
 /* --- 플롯 순서 비교 --- */
 async function runStructCompare(){
   if(isBusy('btn-structcmp')) return;
@@ -1561,6 +1794,10 @@ async function runScriptDraft(){
   try{
     const p=proj();
     const raw=await callClaude(cardContext()+`\n\n이 기획으로 릴스 대본 초안을 써줘. 나레이션 문장 단위. 말맛이 살아있는 구어체(입에 붙는 짧은 문장). 메시지를 직접 설교하지 말 것.
+구간에 "느끼게 할 기분"이 적혀 있으면 그 기분이 실제로 나게 쓴다. 적혀 있지 않아도 전반부는 가볍고 웃기게, 후반부는 뒤집어 뭉클하게 감정의 낙차를 만든다.
+뒤집을 때는 새 소재를 가져오지 말고 전반부에 나온 그 대상을 다시 보게 만든다.
+추상어 대신 구체적이고 사소한 것으로 말한다.
+첫 문장은 붙잡는 문장이 아니라, 다음 문장을 보고 싶게 만드는 문장으로 쓴다.
 반드시 JSON만 출력:
 {"label":"이 버전의 컨셉 한 단어","hook":["문장1","문장2"],"front":["6문장"],"back":["6문장"],"close":["4~5문장"]}
 hook 2개, front 6개, back 6개, close 5개를 맞춰.`, 4000);
@@ -1602,6 +1839,50 @@ async function runScriptPart(gkey){
     }
   }catch(e){ alert(e.message); }
   busy(id,false);
+}
+
+/* --- 말로 풀어쓰기: 편하게 쓴 글을 대본 20문장 틀에 나눠 담기 --- */
+function openTalk(){
+  document.getElementById('talk-input').value='';
+  document.getElementById('modal-talk').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('talk-input').focus(),50);
+}
+function closeTalk(){ document.getElementById('modal-talk').classList.add('hidden'); }
+async function runTalk(){
+  if(isBusy('talk-run')) return;
+  const txt=document.getElementById('talk-input').value.trim();
+  if(!txt){ alert('먼저 하고 싶은 이야기를 적어주세요.'); return; }
+  const s=activeScript();
+  const hasAny=SCRIPT_GROUPS.some(g=>(s.lines[g.key]||[]).some(l=>l&&l.trim()));
+  if(hasAny && !confirm('지금 대본에 적힌 내용을 새로 담은 내용으로 바꿀까요?')) return;
+  busy('talk-run',true);
+  try{
+    const raw=await callClaude(cardContext()+`\n\n사용자가 친구에게 이야기하듯 편하게 쓴 글이야:
+"""
+${txt}
+"""
+
+이 이야기를 릴스 대본 틀에 나눠 담아줘.
+- 사용자가 쓴 말투와 표현을 최대한 살린다. 사용자의 구체적인 디테일은 절대 버리지 않는다.
+- 없는 내용을 지어내지 않는다. 부족한 칸은 비워둔다.
+- 긴 문장은 입에 붙게 짧게 끊는다.
+- 순서는 후킹, 전반부(상황), 후반부(해석), 마무리 흐름에 맞게 재배치해도 된다.
+- 전반부는 가볍게, 후반부에서 뒤집히게 배치한다.
+반드시 JSON만 출력: {"hook":["최대 2문장"],"front":["최대 6문장"],"back":["최대 6문장"],"close":["최대 5문장"]}`, 3500);
+    const obj=parseJSONBlock(raw,false);
+    let wrote=0;
+    SCRIPT_GROUPS.forEach(g=>{
+      let arr=obj[g.key]||obj[g.label];
+      if(!Array.isArray(arr)) return;
+      arr=arr.filter(x=>typeof x==='string' && x.trim());
+      if(!arr.length) return;
+      s.lines[g.key]=Array.from({length:g.count},(_,i)=>arr[i]||'');
+      wrote++;
+    });
+    if(!wrote){ alert('내용을 나눠 담지 못했어요. 한 번 더 눌러주세요.'); }
+    else { save(); renderScript(); closeTalk(); }
+  }catch(e){ alert(e.message); }
+  busy('talk-run',false);
 }
 
 /* --- 화면 제안: 문장마다 어울리는 화면(줄콘티)을 AI가 채워줌 --- */
