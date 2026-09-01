@@ -242,8 +242,8 @@ body.auth-locked header .util .hidden{display:none}
 .wrow .wfields{flex:1;display:flex;gap:8px;min-width:0}
 .wrow .wfields label{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
 .wrow .wfields label span{font-size:0.68rem;font-weight:600;letter-spacing:0.04em;color:var(--ink-30)}
-.wrow input{border:none;border-radius:8px;background:#f5f5f5;padding:9px 12px;min-width:0;width:100%}
-.wrow input:focus{outline:2px solid var(--ink)}
+.wrow textarea{border:none;border-radius:8px;background:#f5f5f5;padding:9px 12px;min-width:0;width:100%;resize:none;overflow:hidden;line-height:1.55;font-size:0.9rem}
+.wrow textarea:focus{outline:2px solid var(--ink)}
 .ver-tabs{display:flex;gap:0;flex-wrap:wrap}
 .ver-tabs button{padding:8px 14px;border:1px solid var(--rule);border-radius:8px;background:none;font-weight:500;font-size:0.8rem;color:var(--ink-60)}
 .ver-tabs button+button{border-left:none}
@@ -256,7 +256,7 @@ body.auth-locked header .util .hidden{display:none}
 .sline .n{padding-top:9px}
 .sline .lwrap{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
 .linerow{display:flex;gap:6px;align-items:center;min-width:0}
-.linerow input{flex:1;min-width:0}
+.linerow textarea{flex:1;min-width:0}
 .lfix{opacity:0;pointer-events:none;flex-shrink:0;font-size:0.72rem;font-weight:600;color:var(--ink-30);border:1px solid var(--rule);border-radius:6px;padding:6px 9px;background:var(--paper);transition:opacity .12s}
 .linerow:focus-within .lfix,.lfix.on{opacity:1;pointer-events:auto}
 .lfix:hover{color:var(--ink);border-color:var(--ink)}
@@ -265,8 +265,8 @@ body.auth-locked header .util .hidden{display:none}
 .sline .conti{border:none;border-radius:6px;background:#ececec;padding:7px 12px;font-size:0.78rem;color:var(--ink-60)}
 .sline .conti:focus{outline:1.5px solid var(--ink);color:var(--ink)}
 .sline .n{width:22px;text-align:right;font-size:0.72rem;font-weight:500;color:var(--ink-30)}
-.sline input{flex:1;border:none;border-radius:8px;background:#f5f5f5;padding:9px 12px}
-.sline input:focus{outline:2px solid var(--ink)}
+.sline textarea{flex:1;border:none;border-radius:8px;background:#f5f5f5;padding:9px 12px;resize:none;overflow:hidden;line-height:1.55;min-width:0}
+.sline textarea:focus{outline:2px solid var(--ink)}
 
 /* ---------- 모달 ---------- */
 .modal-bg{position:fixed;inset:0;background:#111111d9;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
@@ -336,9 +336,11 @@ body.auth-locked header .util .hidden{display:none}
   .beat .bicons span{font-size:0.95rem;padding:2px}
   .script-head{gap:8px}
   .why-head{gap:8px}
-  .wrow{flex-direction:column;gap:6px}
-  .wrow .wlabel{width:auto;padding-top:0}
-  .wrow .wfields{flex-direction:column;width:100%}
+  /* 구간별로 카드처럼 묶어서 어디까지가 한 구간인지 보이게 */
+  .wrow{flex-direction:column;gap:10px;background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:14px;margin-bottom:10px}
+  .wrow .wlabel{width:auto;padding-top:0;font-size:0.8rem;color:var(--ink)}
+  .wrow .wfields{flex-direction:column;gap:10px;width:100%}
+  .wrow textarea{background:#f0f0f0}
 }
 /* ---------- 길라잡이 ---------- */
 .onb .onb-num{font-weight:900;color:var(--ink-30);font-size:2.2rem;letter-spacing:-0.04em;margin-bottom:2px}
@@ -890,10 +892,11 @@ function renderWhyRows(){
     const w=whyGet(p,s.key);
     return `<div class="wrow"><span class="wlabel">${s.label}</span>
       <div class="wfields">
-        <label><span>전할 내용</span><input placeholder="${esc(s.exInfo||'이 구간에서 무엇을 보여주나요')}" value="${esc(w.info)}" oninput="whyInput('${s.key}','info',this.value)"></label>
-        <label><span>느끼게 할 기분</span><input placeholder="${esc(s.exFeel||'예) 피식 웃긴다, 살짝 뭉클하다')}" value="${esc(w.feel)}" oninput="whyInput('${s.key}','feel',this.value)"></label>
+        <label><span>전할 내용</span><textarea rows="1" placeholder="${esc(s.exInfo||'이 구간에서 무엇을 보여주나요')}" oninput="whyInput('${s.key}','info',this.value)">${esc(w.info)}</textarea></label>
+        <label><span>느끼게 할 기분</span><textarea rows="1" placeholder="${esc(s.exFeel||'예) 피식 웃긴다, 살짝 뭉클하다')}" oninput="whyInput('${s.key}','feel',this.value)">${esc(w.feel)}</textarea></label>
       </div></div>`;
   }).join('');
+  el.querySelectorAll('textarea').forEach(autoGrow); // 쓴 내용이 다 보이게 높이 맞춤
 }
 /* 입력칸이 쓰는 만큼 아래로 늘어나게 */
 function autoGrow(el){
@@ -902,6 +905,9 @@ function autoGrow(el){
 }
 function growAllTextareas(){ document.querySelectorAll('textarea').forEach(autoGrow); }
 document.addEventListener('input', e=>{ if(e.target && e.target.tagName==='TEXTAREA') autoGrow(e.target); });
+// 화면 폭이 바뀌면 줄 수가 달라지므로 높이를 다시 맞춘다
+let growTimer=null;
+window.addEventListener('resize', ()=>{ clearTimeout(growTimer); growTimer=setTimeout(growAllTextareas, 120); });
 function renderScoreBadge(){
   const p=proj();
   const stale = p.scoreStale ? ` <span class="muted">수정됨, 다시 채점해보세요</span>` : '';
@@ -1226,13 +1232,14 @@ function renderScript(){
         <div class="sline"><span class="n">${i+1}</span>
           <div class="lwrap">
             <div class="linerow">
-              <input value="${esc(l)}" ${i===0&&g.ex?`placeholder="${esc(g.ex)}"`:''} oninput="onLine('${g.key}',${i},this.value)" onfocus="lineFocus('${g.key}',${i})">
+              <textarea rows="1" ${i===0&&g.ex?`placeholder="${esc(g.ex)}"`:''} oninput="onLine('${g.key}',${i},this.value)" onfocus="lineFocus('${g.key}',${i})" onkeydown="if(event.key==='Enter')event.preventDefault()">${esc(l)}</textarea>
               <button class="lfix" id="lfix-${g.key}-${i}" onclick="runLineFix('${g.key}',${i})" title="이 문장을 여러 표현으로 다시 써봐요">다시</button>
             </div>
             <div class="lcands" id="lc-${g.key}-${i}"></div>
             ${contiOpen?`<input class="conti" value="${esc(contiArr(s,g)[i]||'')}" placeholder="예) 어릴 때 사진에 손그림 CG" oninput="onConti('${g.key}',${i},this.value)">`:''}
           </div></div>`).join('')}
     </div>`).join('');
+  document.querySelectorAll('#script-groups textarea').forEach(autoGrow); // 문장이 다 보이게
 }
 function pickScript(id){ proj().activeScript=id; save(); renderScript(); }
 function delScript(id){
