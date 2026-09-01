@@ -226,9 +226,12 @@ body.auth-locked header .util .hidden{display:none}
 /* ---------- 대본 ---------- */
 .script-head{display:flex;align-items:flex-end;gap:14px;margin:44px 0 14px;padding-top:32px;border-top:1px solid var(--rule);flex-wrap:wrap}
 .why-head{display:flex;align-items:flex-end;gap:14px;margin:44px 0 14px;padding-top:32px;border-top:1px solid var(--rule);flex-wrap:wrap}
-.wrow{display:flex;gap:10px;align-items:center;margin-bottom:6px}
-.wrow .wlabel{width:120px;font-size:0.78rem;font-weight:600;color:var(--ink-60);flex-shrink:0}
-.wrow input{flex:1;border:none;border-radius:8px;background:#f5f5f5;padding:9px 12px;min-width:0}
+.wrow{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}
+.wrow .wlabel{width:120px;font-size:0.78rem;font-weight:600;color:var(--ink-60);flex-shrink:0;padding-top:9px}
+.wrow .wfields{flex:1;display:flex;gap:8px;min-width:0}
+.wrow .wfields label{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
+.wrow .wfields label span{font-size:0.68rem;font-weight:600;letter-spacing:0.04em;color:var(--ink-30)}
+.wrow input{border:none;border-radius:8px;background:#f5f5f5;padding:9px 12px;min-width:0;width:100%}
 .wrow input:focus{outline:2px solid var(--ink)}
 .ver-tabs{display:flex;gap:0;flex-wrap:wrap}
 .ver-tabs button{padding:8px 14px;border:1px solid var(--rule);border-radius:8px;background:none;font-weight:500;font-size:0.8rem;color:var(--ink-60)}
@@ -314,7 +317,9 @@ body.auth-locked header .util .hidden{display:none}
   .beat .bicons span{font-size:0.95rem;padding:2px}
   .script-head{gap:8px}
   .why-head{gap:8px}
-  .wrow .wlabel{width:86px;font-size:0.72rem}
+  .wrow{flex-direction:column;gap:6px}
+  .wrow .wlabel{width:auto;padding-top:0}
+  .wrow .wfields{flex-direction:column;width:100%}
 }
 /* ---------- 길라잡이 ---------- */
 .onb .onb-num{font-weight:900;color:var(--ink-30);font-size:2.2rem;letter-spacing:-0.04em;margin-bottom:2px}
@@ -475,7 +480,7 @@ body.auth-locked header .util .hidden{display:none}
     <div class="why-head">
       <div class="sect" style="margin:0">
         <div class="section-title">구간 역할</div>
-        <div class="section-sub">대본까지 쓰고 나면, 구간마다 무슨 일을 하는지 한 줄씩 정리해보세요. 채점과 화면 제안이 더 똑똑해져요.</div>
+        <div class="section-sub">구간마다 무엇을 보여줄지, 그때 어떤 기분이 들게 할지 적어보세요. 앞에서 웃기고 뒤에서 뭉클해지는 것처럼 기분이 달라져야 끝까지 보게 돼요.</div>
       </div>
       <div style="flex:1"></div>
       <button class="btn" id="btn-why-ai" onclick="runWhySuggest()">AI 추천</button>
@@ -810,11 +815,22 @@ function renderDetail(){
   renderScoreBadge(); renderSteps(); renderBoard(); renderScript(); renderWhyRows(); renderGuide(); renderFB();
   growAllTextareas();
 }
+// 구간 역할은 정보(전할 내용)와 감각(느끼게 할 기분) 두 겹. 예전 한 줄 데이터는 정보로 옮겨 읽음
+function whyGet(p, key){
+  const v=(p.why||{})[key];
+  if(typeof v==='string') return {info:v, feel:''};
+  return {info:(v&&v.info)||'', feel:(v&&v.feel)||''};
+}
 function renderWhyRows(){
   const p=proj(); const el=document.getElementById('why-rows'); if(!el||!p) return;
-  el.innerHTML = TEMPLATES[p.template].sections.map(s=>`
-    <div class="wrow"><span class="wlabel">${s.label}</span>
-      <input placeholder="전할 내용과 느끼게 할 감정을 한 줄로" value="${esc((p.why&&p.why[s.key])||'')}" oninput="whyInput('${s.key}',this.value)"></div>`).join('');
+  el.innerHTML = TEMPLATES[p.template].sections.map(s=>{
+    const w=whyGet(p,s.key);
+    return `<div class="wrow"><span class="wlabel">${s.label}</span>
+      <div class="wfields">
+        <label><span>전할 내용</span><input placeholder="이 구간에서 무엇을 보여주나요" value="${esc(w.info)}" oninput="whyInput('${s.key}','info',this.value)"></label>
+        <label><span>느끼게 할 기분</span><input placeholder="예) 피식 웃긴다, 살짝 뭉클하다" value="${esc(w.feel)}" oninput="whyInput('${s.key}','feel',this.value)"></label>
+      </div></div>`;
+  }).join('');
 }
 /* 입력칸이 쓰는 만큼 아래로 늘어나게 */
 function autoGrow(el){
@@ -1038,10 +1054,12 @@ function beatDel(id){
   for(const k of Object.keys(p.beats)){ p.beats[k]=p.beats[k].filter(b=>b.id!==id); }
   markStale(); save(); renderBoard();
 }
-function whyInput(sec,v){
+function whyInput(sec,field,v){
   const p=proj(); if(!p) return;
   if(!p.why) p.why={};
-  p.why[sec]=v;
+  const cur=whyGet(p,sec);
+  cur[field]=v;
+  p.why[sec]=cur;
   markStale(); save();
 }
 function beatMove(id, dir){
@@ -1183,6 +1201,12 @@ const SYSTEM = `너는 "ploty"의 영상 기획 코치다. 아래 방법론(전�
 
 [2강 방법론: 어떻게 말할까 (대본과 화면)]
 - 구간별 역할(WHY): 인트로·상황·해석·마무리 각 구간마다 역할을 정한다. 역할은 두 겹이다: 전달할 내용(정보) + 느끼게 할 감정(감각). 구간에 역할이 적혀 있으면 모든 장면·문장·화면 제안이 그 역할을 다하게 만든다.
+- 메시지성 영상이 지루하고 오글거리는 것을 막는 핵심은 "감각"이다. 정보만 설계하면 설명문이 된다. 구간마다 보는 사람이 어떤 기분이어야 하는지를 짧은 감각어로 못박는다. 예: "숨막히는 느낌, 스트레스" → "해소, 풀린다, 직관적인 귀여움" / "이상하네, 철없네" → "멋진 어른 모먼트" / "공감간다, 뚱땅뚱땅" → "감동, 살짝의 눈시울".
+- 감정의 낙차를 설계한다. 상황 구간은 가볍고 웃기게, 해석 구간에서 뒤집어 뭉클하게. 처음부터 끝까지 진지하면 반드시 지루해진다.
+- 뒤집을 때는 같은 소재를 쓴다. 새 소재를 가져오면 설교가 되고, 앞에서 웃음거리로 쓴 그 대상을 다시 보게 만들면 발견이 된다. 예: 아빠가 옷을 못 입고 그림을 못 그린다(웃음) → 사진 찍을 줄도 모르는 그 아빠가 우리를 찍은 예쁜 사진들(뭉클). 예: 늦게 일어나고 술 마시자고 질척인다(웃음) → 술값 다 내고 밤새 편집하는 사람이었다(존경).
+- 감정은 추상어로 말하지 않고 사소하고 구체적인 것으로 만든다. "행복은 작은 데 있다"가 아니라 "강아지 발가락 개수, 불광천 새끼오리 8마리, 믹스커피 뽑는데 20초".
+- 소재를 한 겹 더 비틀면 감정이 깊어진다. "내 첫 회사 72초 → 내가 너무 사랑했던 첫 회사", "아내 생일 → 아내를 처음 만난 날".
+- 거리 조절: 멋있지만 멀어지면 실패, 멋있는데 가까워지면 성공. 해석 구간의 감각을 정할 때 "멋있다, 그런데 너무 멀지 않은"처럼 거리까지 함께 정한다.
 - 가지치기 3기준(Yes/No가 아니라 스펙트럼): ① 구간의 역할을 뒷받침하는가 ② 재미가 있는가 ③ 영상으로 표현할 방법이 있는가. 셋 다 약한 소재는 덜어낸다.
 - 문장 3기준: 명확한 문장(의미가 잘 전달되는가), 와닿는 문장(전하려는 감정을 제대로 전하는가), 깔끔한 문장(이해에 필요 없는 말이 없는가). 말하듯 쓰고, "이 문장은 역할을 다하고 있는가"로 검토한다.
 - 와닿는 문장의 결(일본 카피의 원칙): 제품 설명보다 사람이 놓인 상황, 기능의 수혜자가 아니라 이야기의 주인공, 큰 감정보다 작은 감정, 해결사가 아니라 동행자, 정답보다 태도. 단, 이 결은 무거워지기 쉬우니 느끼해지지 않게 절제한다.
@@ -1229,8 +1253,9 @@ function friendlyErr(status, text){
 function cardContext(){
   const p=proj();
   const beats=TEMPLATES[p.template].sections.map(s=>{
-    const w=(p.why&&p.why[s.key]||'').trim();
-    return `- ${s.label}${w?` [구간의 역할: ${w}]`:''}: ${(p.beats[s.key]||[]).map(b=>b.text+(b.note?` (장면 메모: ${b.note})`:'')).join(' / ')||'(비어있음)'}`;
+    const w=whyGet(p,s.key);
+    const role=[w.info.trim()&&`전할 내용: ${w.info.trim()}`, w.feel.trim()&&`느끼게 할 기분: ${w.feel.trim()}`].filter(Boolean).join(' / ');
+    return `- ${s.label}${role?` [${role}]`:''}: ${(p.beats[s.key]||[]).map(b=>b.text+(b.note?` (장면 메모: ${b.note})`:'')).join(' / ')||'(비어있음)'}`;
   }).join('\n');
   let ctx=`[기획 카드]
 시작점: ${p.card.start||'(비어있음)'}
@@ -1355,6 +1380,11 @@ async function runFeedback(){
   busy('btn-feedback',true);
   try{
     const raw=await callClaude(cardContext()+`\n\n이 기획을 5개 심사 기준으로 평가하고 점수를 매겨줘. 대본이 있으면 대본도 함께 심사해줘 (특히 '첫 3초'와 '대놓고 말하지 않기'는 대본 문장 기준으로).
+'재미' 항목은 특히 엄격하게 본다. 메시지만 이어지면 지루하고 오글거린다. 다음을 확인해라:
+- 감정의 낙차가 있는가. 앞은 가볍게 웃기고 뒤에서 뭉클하게 뒤집는 식으로 기분이 바뀌는가. 처음부터 끝까지 진지하면 점수를 낮게 준다.
+- 같은 소재를 뒤집었는가. 뒷부분에서 새 소재를 가져오지 않고, 앞에서 웃음거리로 쓴 그 대상을 다시 보게 만드는가.
+- 추상어 대신 구체적이고 사소한 것으로 말하는가. "행복은 작은 데 있다" 같은 말이 아니라 "믹스커피 뽑는데 20초" 같은 구체물로 말하는가.
+- 거리가 적당한가. 멋있지만 멀어지는 게 아니라, 멋있는데 가까워지는가.
 각 항목의 example에는 그 방향으로 고친 구체적인 예시 문장 1개를 이 기획의 소재를 그대로 써서 만들어줘.
 label은 이 기획이 보는 사람에게서 이끌어내는 반응을 다음 여섯 중 하나로: 웃음, 위로, 공감, 도움, 동경, 호기심.
 반드시 아래 JSON 형식만 출력:
@@ -1594,18 +1624,27 @@ async function runWhySuggest(){
   if(!cardHasContent()){ alert('기획 카드가 아직 비어 있어요. 시작점부터 채워주세요.'); return; }
   const p=proj();
   const secs=TEMPLATES[p.template].sections;
-  const empty=secs.filter(s=>!(p.why&&p.why[s.key]&&p.why[s.key].trim()));
-  if(!empty.length){ alert('모든 구간에 역할이 적혀 있어요. 비우고 다시 누르면 새로 추천해드려요.'); return; }
+  const empty=secs.filter(s=>{ const w=whyGet(p,s.key); return !w.info.trim() || !w.feel.trim(); });
+  if(!empty.length){ alert('모든 구간이 채워져 있어요. 비우고 다시 누르면 새로 추천해드려요.'); return; }
   busy('btn-why-ai',true);
   try{
-    const raw=await callClaude(cardContext()+`\n\n위 기획을 읽고, 각 구간의 역할을 한 줄씩 정해줘.
-역할은 "전할 내용 + 느끼게 할 감정"을 한 문장에 담는다. 예: "이름 때문에 숨고 싶었던 상황을 보여주고, 피식 웃게 만든다"
+    const raw=await callClaude(cardContext()+`\n\n위 기획을 읽고, 각 구간의 역할을 정보와 감각 두 줄로 정해줘.
+- info(전할 내용): 이 구간에서 무엇을 보여주는가
+- feel(느끼게 할 기분): 이 구간에서 보는 사람이 어떤 기분이어야 하는가. 짧고 구체적인 감각어로. 예) "숨막히는 느낌, 스트레스" / "피식 웃긴다, 철없네" / "해소, 풀린다, 직관적인 귀여움" / "멋있다, 그런데 너무 멀지 않은" / "감동, 살짝의 눈시울"
+
+중요: 앞 구간과 뒤 구간의 기분이 달라야 한다. 상황 구간에서 가볍게 웃겼다면 해석 구간에서는 뭉클하게 뒤집는 식으로, 감정의 낙차를 설계해라. 처음부터 끝까지 진지하면 지루해진다.
 반드시 JSON만 출력하고, 키 이름은 아래 영문 키를 글자 그대로 쓸 것:
-{${empty.map(s=>`"${s.key}":"역할 한 줄"`).join(',')}}`, 1200);
+{${empty.map(s=>`"${s.key}":{"info":"전할 내용","feel":"느끼게 할 기분"}`).join(',')}}`, 1500);
     const obj=parseJSONBlock(raw,false);
     if(!p.why) p.why={};
     let wrote=0;
-    empty.forEach(s=>{ if(obj[s.key] && typeof obj[s.key]==='string'){ p.why[s.key]=obj[s.key]; wrote++; } });
+    empty.forEach(s=>{
+      const o=obj[s.key]; if(!o) return;
+      const cur=whyGet(p,s.key);
+      if(typeof o==='string'){ if(!cur.info) cur.info=o; }
+      else { if(!cur.info && o.info) cur.info=String(o.info); if(!cur.feel && o.feel) cur.feel=String(o.feel); }
+      p.why[s.key]=cur; wrote++;
+    });
     if(!wrote){ alert('추천을 읽지 못했어요. 한 번 더 눌러보세요.'); }
     save(); renderWhyRows();
   }catch(e){ alert(e.message); }
@@ -1622,8 +1661,9 @@ function exportPDF(){
     : `<div class="box">${esc(p.card.decompose||'(비어있음)')}</div>`;
   const beatsHtml = TEMPLATES[p.template].sections.map(sec=>{
     const bs=(p.beats[sec.key]||[]);
-    const w=(p.why&&p.why[sec.key]||'').trim();
-    return `<tr><td class="n"><b>${esc(sec.label)}</b><br><span class="arr">${esc(sec.time||'')}</span></td><td>${w?`<span class="arr">역할: ${esc(w)}</span><br>`:''}${bs.length?bs.map(b=>esc(b.text)+(b.note?`<br><span class="arr">메모: ${esc(b.note)}</span>`:'')).join('<br>'):'<span class="arr">(비어있음)</span>'}</td></tr>`;
+    const w=whyGet(p,sec.key);
+    const role=[w.info.trim()&&`전할 내용: ${w.info.trim()}`, w.feel.trim()&&`느끼게 할 기분: ${w.feel.trim()}`].filter(Boolean).join(' · ');
+    return `<tr><td class="n"><b>${esc(sec.label)}</b><br><span class="arr">${esc(sec.time||'')}</span></td><td>${role?`<span class="arr">${esc(role)}</span><br>`:''}${bs.length?bs.map(b=>esc(b.text)+(b.note?`<br><span class="arr">메모: ${esc(b.note)}</span>`:'')).join('<br>'):'<span class="arr">(비어있음)</span>'}</td></tr>`;
   }).join('');
   const hasScript = as && SCRIPT_GROUPS.some(g=>(as.lines[g.key]||[]).some(l=>l&&l.trim()));
   const scriptHtml = hasScript ? `<h2>대본 <span class="arr">(${esc(as.label)})</span></h2><table>`+SCRIPT_GROUPS.map(g=>{
