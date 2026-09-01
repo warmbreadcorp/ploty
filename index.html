@@ -1826,12 +1826,17 @@ async function runScriptDraft(){
 hook 2개, front 6개, back 6개, close 5개를 맞춰.`, 4000);
     const obj=parseJSONBlock(raw,false);
     const v=blankScript('AI: '+(obj.label||'초안'));
+    let wrote=0;
     SCRIPT_GROUPS.forEach(g=>{
-      const src=obj[g.key]||[];
-      v.lines[g.key]=Array.from({length:g.count},(_,i)=>src[i]||'');
+      const src=obj[g.key]||obj[g.label]||[];
+      if(!Array.isArray(src)) return;
+      const clean=src.filter(x=>typeof x==='string' && x.trim());
+      if(clean.length) wrote++;
+      v.lines[g.key]=Array.from({length:g.count},(_,i)=>clean[i]||'');
     });
-    p.scripts.push(v); p.activeScript=v.id;
-    save(); renderScript();
+    // 한 문장도 못 읽었으면 빈 버전을 만들지 않고 알려준다
+    if(!wrote){ alert('대본을 받지 못했어요. 한 번 더 눌러주세요.'); }
+    else { p.scripts.push(v); p.activeScript=v.id; save(); renderScript(); }
   }catch(e){ alert(e.message); }
   busy('btn-script',false);
 }
@@ -2036,9 +2041,7 @@ const ONB_STEPS=[
 
 한 줄 적기에서 시작해서, 장면을 고르고, 대본까지 이어집니다. 막히는 곳마다 AI가 거들어드려요.
 
-AI 기능을 쓰시려면 <b>API 키</b>를 한 번 연결해두셔야 해요. 아래를 눌러 방법을 확인해보세요.
-
-<details class="apihelp"><summary>API 키 연결하는 방법</summary><div class="apisteps"><p><b>1.</b> <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> 에 접속해서 로그인하세요. 계정이 없으시면 가입하시면 돼요.</p><p><b>2.</b> 왼쪽 메뉴에서 <b>API Keys</b> 를 누르세요.</p><p><b>3.</b> <b>Create Key</b> 를 누르고, 이름을 적은 뒤 만드시면 돼요. 이름은 ploty 처럼 알아보기 쉬운 것으로 지으시면 됩니다.</p><p><b>4.</b> 만들어진 키를 복사하세요.</p><p class="warn"><b>!</b> 키는 만든 직후 <b>딱 한 번만</b> 보여요. 창을 닫으면 다시 볼 수 없으니, 복사해서 메모장이나 비밀번호 관리 앱에 따로 저장해두세요. 잃어버리시면 새로 만드셔야 해요.</p><p><b>5.</b> ploty 상단의 <b>설정</b>을 눌러 그 칸에 붙여넣고 <b>저장</b>을 누르시면 끝이에요.</p><p class="muted">키는 계정에 저장되어서, 다른 기기에서 로그인하셔도 따라옵니다. 사용료는 사용하신 만큼 Anthropic에 청구돼요.</p></div></details>`},
+이 길라잡이는 상단 '길라잡이'에서 언제든 다시 보실 수 있어요.`},
  {t:'재료함, 일단 주워두세요', b:`좋은 기획은 평소에 주워둔 재료에서 나와요.
 
 대화, 읽은 글, 뉴스, 문득 떠오른 생각.
@@ -2082,9 +2085,10 @@ AI 기능을 쓰시려면 <b>API 키</b>를 한 번 연결해두셔야 해요. �
 
 <b>숏폼으로 덜어내기</b>는 긴 기획에서 핵심 세 가지만 남기고, 덜어낸 소재는 재료함에 넣어둬요.
 
-다 되면 <b>PDF 내보내기</b>로 정리된 문서를 받으실 수 있어요.
+다 되면 <b>PDF 내보내기</b>로 정리된 문서를 받으실 수 있어요.`},
+ {t:'마지막으로, API 키 연결', b:`앞에서 본 AI 기능들을 쓰시려면 <b>API 키</b>를 한 번 연결해두셔야 해요. 한 번만 해두시면 계속 쓰실 수 있습니다.
 
-설정에서 <b>API 키</b>를 넣으면 AI 기능이 켜집니다.`},
+<details class="apihelp" open><summary>연결하는 방법</summary><div class="apisteps"><p><b>1.</b> <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> 에 접속해서 로그인하세요. 계정이 없으시면 가입하시면 돼요.</p><p><b>2.</b> 왼쪽 메뉴에서 <b>API Keys</b> 를 누르세요.</p><p><b>3.</b> <b>Create Key</b> 를 누르고, 이름을 적은 뒤 만드시면 돼요. 이름은 ploty 처럼 알아보기 쉬운 것으로 지으시면 됩니다.</p><p><b>4.</b> 만들어진 키를 복사하세요.</p><p class="warn"><b>!</b> 키는 만든 직후 <b>딱 한 번만</b> 보여요. 창을 닫으면 다시 볼 수 없으니, 복사해서 메모장이나 비밀번호 관리 앱에 따로 저장해두세요. 잃어버리시면 새로 만드셔야 해요.</p><p><b>5.</b> ploty 상단의 <b>설정</b>을 눌러 그 칸에 붙여넣고 <b>저장</b>을 누르시면 끝이에요.</p><p class="muted">키는 계정에 저장되어서, 다른 기기에서 로그인하셔도 따라옵니다. 사용료는 사용하신 만큼 Anthropic에 청구돼요.</p></div></details>`},
 ];
 let onbIdx=0;
 function startOnboarding(){ onbIdx=0; renderOnb(); document.getElementById('modal-onb').classList.remove('hidden'); }
