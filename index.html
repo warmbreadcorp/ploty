@@ -308,8 +308,9 @@ body.auth-locked header .util .hidden{display:none}
   .board-head{gap:8px}
   .board-head .sect{width:100%}
   .board-actions .btn{flex:1;padding:10px 6px}
-  .tmpl-pick{width:100%}
+  .tmpl-pick{flex:1;min-width:0}
   .tmpl-pick button{flex:1;text-align:center;padding:10px 2px;font-size:0.78rem}
+  .thelp-pop{left:auto;right:0} /* 화면 오른쪽 끝 버튼에서 왼쪽으로 펼침 */
   .step{padding:14px}
   .modal{padding:24px 18px}
   .beat{cursor:default;padding-right:104px}
@@ -451,9 +452,12 @@ body.auth-locked header .util .hidden{display:none}
           <div class="tmpl-help">
             <button class="thelp-btn" onclick="thelpToggle(event)" title="어떤 걸 고를까요?">?</button>
             <div class="thelp-pop hidden" id="thelp-pop">
-              <p><b>2단</b>은 보는 사람의 인식을 비포에서 애프터로 바꾸는 구조예요. 같은 상황인데, 해석을 듣고 나면 다르게 보여요.<br><span class="muted">예) 나이 들수록 겁만 많아져요 → 용감했던 어린 시절에도 사실 겁은 났었죠, 떨면서도 그냥 했을 뿐. 용기는 겁이 없는 게 아니라, 겁이 나도 하는 거였어요</span></p>
-              <p><b>3막</b>은 사건이 벌어지는 이야기예요. 문제가 생기고 풀리는 과정을 따라가다가, 해결에서 메시지가 느껴지게 해요.<br><span class="muted">예) 퇴사하고 첫 영상을 올렸어요(설정) → 조회수 32회, 그만둘까 싶었죠(대립) → 근데 그중 한 명이 댓글을 남겼더라고요. 그 한 명 때문에 다음 영상을 찍었습니다(해결)</span></p>
-              <p class="muted" style="margin:0">고민되면 2단으로 시작해보세요.</p>
+              <p><b>2단</b>은 같은 대상을 앞에서 웃음거리로 보여준 뒤, 뒤에서 다시 보게 만드는 구조예요. 강의에서 다룬 사례가 모두 이 방식이었어요.</p>
+              <p class="muted" style="margin:0 0 6px">아빠 이야기<br>미감이 떨어지는 아빠, 옷도 못 입고 그림도 못 그리고 <b>(웃음)</b><br>→ 사진 찍을 줄도 모르는 그 아빠가, 우리를 이렇게 예쁘게 찍어뒀더라고요 <b>(뭉클)</b></p>
+              <p class="muted" style="margin:0 0 6px">선배 이야기<br>늦게 일어나는 줄, 술 마시자고 질척대는 줄 알았어요 <b>(웃음)</b><br>→ 술값 다 내고, 밤새 편집하고, 모르는 건 숨기지 않는 사람이었어요 <b>(존경)</b></p>
+              <p class="muted">겁 이야기<br>나이 드니까 겁만 많아져요<br>→ 엄마 말론 어릴 때도 겁이 많았대요. 반장 선거 떨어질까 봐 울고, 대사 틀릴까 봐 밤새 외우고 <b>(뒤집기)</b></p>
+              <p><b>3막</b>은 사건이 시간 순서로 벌어지는 이야기예요. 문제가 생기고 풀리는 과정 자체가 재미일 때 골라보세요.</p>
+              <p class="muted" style="margin:0">강의 사례는 전부 2단이었어요. 고민되면 2단으로 시작해보세요.</p>
             </div>
           </div>
         </div>
@@ -581,27 +585,41 @@ const BENEFIT_TYPES=[
   {v:'상징적', l:'따라 하고 싶어져요'},
 ];
 
+// exInfo / exFeel 은 강의(전설민규 2강)에 나온 실제 사례에서 가져온 예시 문구
 const TEMPLATES = {
   twostep: { name:'2단 구조', sections:[
-    {key:'intro',  label:'INTRO',        time:'~3초',  hint:'첫 3초에 시선 잡기'},
-    {key:'part1',  label:'PART 1 · 상황', time:'~20초', hint:'공감 가는 상황 보여주기'},
-    {key:'part2',  label:'PART 2 · 해석', time:'~20초', hint:'같은 상황을 다르게 보게 하기'},
-    {key:'ending', label:'ENDING',       time:'~10초', hint:'정리하며 여운 남기기'},
+    {key:'intro',  label:'INTRO',        time:'~3초',  hint:'첫 3초에 시선 잡기',
+      exInfo:'예) 나이가 드니까 자꾸 겁만 많아집니다', exFeel:'예) 어? 나도 그런데'},
+    {key:'part1',  label:'PART 1 · 상황', time:'~20초', hint:'공감 가는 상황 보여주기',
+      exInfo:'예) 숫자 때문에 스트레스 받는 우리', exFeel:'예) 숨막히는 느낌, 스트레스'},
+    {key:'part2',  label:'PART 2 · 해석', time:'~20초', hint:'같은 상황을 다르게 보게 하기',
+      exInfo:'예) 기분이 좋아지는 숫자들', exFeel:'예) 해소, 풀린다, 직관적인 귀여움'},
+    {key:'ending', label:'ENDING',       time:'~10초', hint:'정리하며 여운 남기기',
+      exInfo:'예) 떠올리며 살자', exFeel:'예) 정리되는 느낌, 다짐'},
   ]},
   threeact: { name:'3막 구성', sections:[
-    {key:'intro',   label:'INTRO',      time:'~3초', hint:'첫 3초에 시선 잡기'},
-    {key:'setup',   label:'1막 · 설정',  time:'',     hint:'누가, 어떤 상황에서, 뭘 원하는지'},
-    {key:'conflict',label:'2막 · 대립',  time:'',     hint:'가로막는 것, 커지는 긴장'},
-    {key:'resolve', label:'3막 · 해결',  time:'',     hint:'상황이 풀리는 순간'},
-    {key:'ending',  label:'ENDING',     time:'',     hint:'정리하며 여운 남기기'},
+    {key:'intro',   label:'INTRO',      time:'~3초', hint:'첫 3초에 시선 잡기',
+      exInfo:'예) 나이가 드니까 자꾸 겁만 많아집니다', exFeel:'예) 어? 나도 그런데'},
+    {key:'setup',   label:'1막 · 설정',  time:'',     hint:'누가, 어떤 상황에서, 뭘 원하는지',
+      exInfo:'예) 그 선배가 어떤 사람인지 소개', exFeel:'예) 이상하네, 철없네'},
+    {key:'conflict',label:'2막 · 대립',  time:'',     hint:'가로막는 것, 커지는 긴장',
+      exInfo:'예) 자꾸 부딪히는 순간들', exFeel:'예) 답답하다, 어쩌지'},
+    {key:'resolve', label:'3막 · 해결',  time:'',     hint:'상황이 풀리는 순간',
+      exInfo:'예) 알고 보니 밤새 편집하던 사람', exFeel:'예) 멋진 어른 모먼트'},
+    {key:'ending',  label:'ENDING',     time:'',     hint:'정리하며 여운 남기기',
+      exInfo:'예) 나도 그래야지', exFeel:'예) 감동, 살짝의 눈시울'},
   ]},
 };
 
 const SCRIPT_GROUPS = [
-  {key:'hook',  label:'후킹',   count:2, gd:'1~2문장, 첫 3초에 계속 볼 이유를 주는 곳'},
-  {key:'front', label:'전반부', count:6, gd:'6문장, 상황을 보여주는 곳'},
-  {key:'back',  label:'후반부', count:6, gd:'6문장, 해석을 이끌어내는 곳'},
-  {key:'close', label:'마무리', count:5, gd:'4~5문장, 정리하며 메시지가 느껴지게 하는 곳'},
+  {key:'hook',  label:'후킹',   count:2, gd:'1~2문장, 첫 3초에 계속 볼 이유를 주는 곳',
+    ex:'예) 나이가 드니까 자꾸 겁만 많아집니다'},
+  {key:'front', label:'전반부', count:6, gd:'6문장, 상황을 보여주는 곳',
+    ex:'예) 뭐 일단 장래희망에 "대통령" 적어 놨으면 말 다 했죠'},
+  {key:'back',  label:'후반부', count:6, gd:'6문장, 해석을 이끌어내는 곳',
+    ex:'예) 대통령은 무슨, 반장 선거 떨어질까봐 울고'},
+  {key:'close', label:'마무리', count:5, gd:'4~5문장, 정리하며 메시지가 느껴지게 하는 곳',
+    ex:'예) 겁이 난다는 것 자체가 이미 용기를 내고 있다는 증거일지도 모르겠습니다'},
 ];
 
 let state = load();
@@ -827,8 +845,8 @@ function renderWhyRows(){
     const w=whyGet(p,s.key);
     return `<div class="wrow"><span class="wlabel">${s.label}</span>
       <div class="wfields">
-        <label><span>전할 내용</span><input placeholder="이 구간에서 무엇을 보여주나요" value="${esc(w.info)}" oninput="whyInput('${s.key}','info',this.value)"></label>
-        <label><span>느끼게 할 기분</span><input placeholder="예) 피식 웃긴다, 살짝 뭉클하다" value="${esc(w.feel)}" oninput="whyInput('${s.key}','feel',this.value)"></label>
+        <label><span>전할 내용</span><input placeholder="${esc(s.exInfo||'이 구간에서 무엇을 보여주나요')}" value="${esc(w.info)}" oninput="whyInput('${s.key}','info',this.value)"></label>
+        <label><span>느끼게 할 기분</span><input placeholder="${esc(s.exFeel||'예) 피식 웃긴다, 살짝 뭉클하다')}" value="${esc(w.feel)}" oninput="whyInput('${s.key}','feel',this.value)"></label>
       </div></div>`;
   }).join('');
 }
@@ -1159,8 +1177,8 @@ function renderScript(){
       ${s.lines[g.key].map((l,i)=>`
         <div class="sline"><span class="n">${i+1}</span>
           <div class="lwrap">
-            <input value="${esc(l)}" oninput="onLine('${g.key}',${i},this.value)">
-            ${contiOpen?`<input class="conti" value="${esc(contiArr(s,g)[i]||'')}" placeholder="이 문장에 어떤 화면을 보여줄까요?" oninput="onConti('${g.key}',${i},this.value)">`:''}
+            <input value="${esc(l)}" ${i===0&&g.ex?`placeholder="${esc(g.ex)}"`:''} oninput="onLine('${g.key}',${i},this.value)">
+            ${contiOpen?`<input class="conti" value="${esc(contiArr(s,g)[i]||'')}" placeholder="예) 어릴 때 사진에 손그림 CG" oninput="onConti('${g.key}',${i},this.value)">`:''}
           </div></div>`).join('')}
     </div>`).join('');
 }
@@ -1203,7 +1221,7 @@ const SYSTEM = `너는 "ploty"의 영상 기획 코치다. 아래 방법론(전�
 - 구간별 역할(WHY): 인트로·상황·해석·마무리 각 구간마다 역할을 정한다. 역할은 두 겹이다: 전달할 내용(정보) + 느끼게 할 감정(감각). 구간에 역할이 적혀 있으면 모든 장면·문장·화면 제안이 그 역할을 다하게 만든다.
 - 메시지성 영상이 지루하고 오글거리는 것을 막는 핵심은 "감각"이다. 정보만 설계하면 설명문이 된다. 구간마다 보는 사람이 어떤 기분이어야 하는지를 짧은 감각어로 못박는다. 예: "숨막히는 느낌, 스트레스" → "해소, 풀린다, 직관적인 귀여움" / "이상하네, 철없네" → "멋진 어른 모먼트" / "공감간다, 뚱땅뚱땅" → "감동, 살짝의 눈시울".
 - 감정의 낙차를 설계한다. 상황 구간은 가볍고 웃기게, 해석 구간에서 뒤집어 뭉클하게. 처음부터 끝까지 진지하면 반드시 지루해진다.
-- 뒤집을 때는 같은 소재를 쓴다. 새 소재를 가져오면 설교가 되고, 앞에서 웃음거리로 쓴 그 대상을 다시 보게 만들면 발견이 된다. 예: 아빠가 옷을 못 입고 그림을 못 그린다(웃음) → 사진 찍을 줄도 모르는 그 아빠가 우리를 찍은 예쁜 사진들(뭉클). 예: 늦게 일어나고 술 마시자고 질척인다(웃음) → 술값 다 내고 밤새 편집하는 사람이었다(존경).
+- 뒤집을 때는 같은 소재를 쓴다. 새 소재를 가져오면 설교가 되고, 앞에서 웃음거리로 쓴 그 대상을 다시 보게 만들면 발견이 된다. 예: 아빠가 옷을 못 입고 그림을 못 그린다(웃음) → 사진 찍을 줄도 모르는 그 아빠가 우리를 찍은 예쁜 사진들(뭉클). 예: 그 선배는 늦게 일어나고 술 마시자고 질척인다(웃음) → 술값 다 내고 밤새 편집하는 사람이었다(존경).
 - 감정은 추상어로 말하지 않고 사소하고 구체적인 것으로 만든다. "행복은 작은 데 있다"가 아니라 "강아지 발가락 개수, 불광천 새끼오리 8마리, 믹스커피 뽑는데 20초".
 - 소재를 한 겹 더 비틀면 감정이 깊어진다. "내 첫 회사 72초 → 내가 너무 사랑했던 첫 회사", "아내 생일 → 아내를 처음 만난 날".
 - 거리 조절: 멋있지만 멀어지면 실패, 멋있는데 가까워지면 성공. 해석 구간의 감각을 정할 때 "멋있다, 그런데 너무 멀지 않은"처럼 거리까지 함께 정한다.
