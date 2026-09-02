@@ -1437,7 +1437,7 @@ const SYSTEM = `너는 "ploty"의 영상 기획 코치다. 아래 방법론(전�
 [2강 방법론: 어떻게 말할까 (대본과 화면)]
 - 구간별 역할(WHY): 인트로·상황·해석·마무리 각 구간마다 역할을 정한다. 역할은 두 겹이다: 전달할 내용(정보) + 느끼게 할 감정(감각). 구간에 역할이 적혀 있으면 모든 장면·문장·화면 제안이 그 역할을 다하게 만든다.
 - 메시지성 영상이 지루하고 오글거리는 것을 막는 핵심은 "감각"이다. 정보만 설계하면 설명문이 된다. 구간마다 보는 사람이 어떤 기분이어야 하는지를 짧은 감각어로 못박는다. 예: "숨막히는 느낌, 스트레스" → "해소, 풀린다, 직관적인 귀여움" / "이상하네, 철없네" → "멋진 어른 모먼트" / "공감간다, 뚱땅뚱땅" → "감동, 살짝의 눈시울".
-- 감정의 낙차를 설계한다. 상황 구간은 가볍고 웃기게, 해석 구간에서 뒤집어 뭉클하게. 처음부터 끝까지 진지하면 반드시 지루해진다.
+- 구간마다 보는 사람의 기분이 달라지게 만든다. 상황 구간은 가볍고 웃기게, 해석 구간에서 뒤집어 뭉클하게. 처음부터 끝까지 진지하면 반드시 지루해진다. 사용자에게 설명할 때는 '낙차' 같은 말 대신 '앞에서 웃겼다가 뒤에서 뭉클하게 바꾸기'처럼 풀어서 말한다.
 - 뒤집을 때는 같은 소재를 쓴다. 새 소재를 가져오면 설교가 되고, 앞에서 웃음거리로 쓴 그 대상을 다시 보게 만들면 발견이 된다. 예: 아빠가 옷을 못 입고 그림을 못 그린다(웃음) → 사진 찍을 줄도 모르는 그 아빠가 우리를 찍은 예쁜 사진들(뭉클). 예: 그 선배는 늦게 일어나고 술 마시자고 질척인다(웃음) → 술값 다 내고 밤새 편집하는 사람이었다(존경).
 - 감정은 추상어로 말하지 않고 사소하고 구체적인 것으로 만든다. "행복은 작은 데 있다"가 아니라 "강아지 발가락 개수, 불광천 새끼오리 8마리, 믹스커피 뽑는데 20초".
 - 소재를 한 겹 더 비틀면 감정이 깊어진다. "내 첫 회사 72초 → 내가 너무 사랑했던 첫 회사", "아내 생일 → 아내를 처음 만난 날".
@@ -1454,6 +1454,14 @@ const SYSTEM = `너는 "ploty"의 영상 기획 코치다. 아래 방법론(전�
 - 한국어. 자연스럽고 담백한 존댓말("~해요", "~해보세요"). 이모지, 과장된 칭찬, 호들갑은 쓰지 않는다.
 - 줄표(—)를 쓰지 않는다. 쉼표나 마침표로 잇는다.
 - 어려운 용어를 쓰지 않는다. "소비자 편익"은 "보는 사람이 얻는 것", "키 콘텐츠"는 "대신 보여줄 이야기", "해체"는 "왜? 파고들기", "비트"는 "장면"이라고 부른다.
+- 다음 단어는 사용자에게 보이는 글에 절대 쓰지 않는다: 낙차, 감정의 낙차, 톤앤매너, 빌드업, 임팩트, 인사이트, 페이소스, 레이어, 훅, 후킹력, 텐션, 무드, 서사, 기승전결, 결이, 완급.
+  이 개념을 말해야 할 때는 아래처럼 풀어서 쓴다.
+  · 낙차 → "앞에서 웃기고 뒤에서 뭉클해지는 흐름", "보는 사람 기분이 중간에 바뀌는 것"
+  · 행동으로 닫는다 → "다짐하는 말 대신, 실제로 한 행동 하나로 끝내기"
+  · 훅이 약하다 → "첫 문장이 다음 문장을 보고 싶게 만들지 못해요"
+  · 구체성이 부족하다 → "'행복은 작은 데 있다' 같은 말 대신 '믹스커피 뽑는데 20초'처럼 손에 잡히는 것으로 적어보세요"
+  스스로 만든 비유나 줄임말도 마찬가지다. 처음 보는 사람이 한 번 읽고 이해하지 못할 표현이면 쓰지 않는다.
+- 지적할 때는 "무엇이 문제인지 + 그래서 어떻게 하면 되는지"를 한 문장 안에 같이 넣는다. 문제만 말하고 끝내지 않는다.
 - 좋으면 왜 좋은지, 약하면 어디가 왜 약한지 구체적으로 말한다.
 - 대안은 항상 복수(3~5개)로 내서 비교하게 한다. 정답이 아니라 비교 재료를 준다.
 - 소재를 바꾸라고 하지 않는다. 그 소재 안에서 더 나은 각도를 찾는다.
@@ -1625,11 +1633,12 @@ ${hasScriptNow
 : `아직 대본이 없다. 기획 카드·구간 역할·플롯을 근거로 심사하되, note에 "대본을 쓰고 다시 채점하면 더 정확해져요"를 한 번 덧붙인다.`}
 
 '재미' 항목은 특히 엄격하게 본다. 메시지만 이어지면 지루하고 오글거린다. 다음을 확인해라:
-- 감정의 낙차가 있는가. 앞은 가볍게 웃기고 뒤에서 뭉클하게 뒤집는 식으로 기분이 바뀌는가. 처음부터 끝까지 진지하면 점수를 낮게 준다.
+- 보는 사람의 기분이 중간에 바뀌는가. 앞은 가볍게 웃기고 뒤에서 뭉클해지는 식인가. 처음부터 끝까지 진지하면 점수를 낮게 준다.
 - 같은 소재를 뒤집었는가. 뒷부분에서 새 소재를 가져오지 않고, 앞에서 웃음거리로 쓴 그 대상을 다시 보게 만드는가.
 - 추상어 대신 구체적이고 사소한 것으로 말하는가. "행복은 작은 데 있다" 같은 말이 아니라 "믹스커피 뽑는데 20초" 같은 구체물로 말하는가.
 - 거리가 적당한가. 멋있지만 멀어지는 게 아니라, 멋있는데 가까워지는가.
 각 항목의 example에는 그 방향으로 고친 구체적인 예시 문장 1개를 이 기획의 소재를 그대로 써서 만들어줘.
+note와 comment는 처음 보는 사람도 한 번 읽고 바로 이해할 수 있는 말로 쓴다. '낙차', '훅', '톤앤매너', '빌드업' 같은 업계 용어와 스스로 만든 비유는 쓰지 않는다. 예를 들어 '낙차가 작다'는 '앞이 덜 웃겨서 뒤가 덜 뭉클해져요'처럼 풀어서 쓴다.
 label은 이 기획이 보는 사람에게서 이끌어내는 반응을 다음 여섯 중 하나로: 웃음, 위로, 공감, 도움, 동경, 호기심.
 반드시 아래 JSON 형식만 출력:
 {
@@ -1727,14 +1736,14 @@ async function runStructGen(){
   try{
     const p=proj();
     const secs=TEMPLATES[p.template].sections;
-    // 먼저 구간마다 역할(정보+감각)을 낙차 있게 정하고, 그 역할에 맞는 장면을 만든다
+    // 먼저 구간마다 역할(정보+감각)을 정하고, 기분이 바뀌도록 장면을 만든다
     const raw=await callClaude(cardContext()+`\n\n기획 카드를 바탕으로 ${TEMPLATES[p.template].name} 구조 초안을 만들어줘.
 
 먼저 구간마다 역할을 정한다.
 - info(전할 내용): 이 구간에서 무엇을 보여주는가
 - feel(느끼게 할 기분): 이 구간에서 보는 사람이 어떤 기분이어야 하는가. 짧은 감각어로.
 
-가장 중요한 규칙: 구간마다 기분이 달라야 한다. 상황 구간은 가볍고 웃기게 시작해서, 해석 구간에서 뒤집어 뭉클하거나 존경스럽게 만든다. 처음부터 끝까지 진지하면 지루해진다.
+가장 중요한 규칙: 구간마다 보는 사람의 기분이 달라야 한다. 상황 구간은 가볍고 웃기게 시작해서, 해석 구간에서 뒤집어 뭉클하거나 존경스럽게 만든다. 처음부터 끝까지 진지하면 지루해진다.
 뒤집을 때는 새 소재를 가져오지 말고, 앞에서 웃음거리로 쓴 그 대상을 다시 보게 만든다.
 장면은 추상어("행복은 작은 데 있다") 대신 구체적이고 사소한 것("믹스커피 뽑는데 20초")으로 쓴다.
 이미 역할이 적혀 있는 구간은 그 역할을 그대로 존중하고 장면만 만든다.
@@ -1929,7 +1938,7 @@ async function runScriptDraft(){
   try{
     const p=proj();
     const raw=await callClaude(cardContext()+`\n\n이 기획으로 릴스 대본 초안을 써줘. 나레이션 문장 단위. 말맛이 살아있는 구어체(입에 붙는 짧은 문장). 메시지를 직접 설교하지 말 것.
-구간에 "느끼게 할 기분"이 적혀 있으면 그 기분이 실제로 나게 쓴다. 적혀 있지 않아도 전반부는 가볍고 웃기게, 후반부는 뒤집어 뭉클하게 감정의 낙차를 만든다.
+구간에 "느끼게 할 기분"이 적혀 있으면 그 기분이 실제로 나게 쓴다. 적혀 있지 않아도 전반부는 가볍고 웃기게, 후반부는 뒤집어 뭉클하게, 보는 사람의 기분이 중간에 바뀌도록 쓴다.
 뒤집을 때는 새 소재를 가져오지 말고 전반부에 나온 그 대상을 다시 보게 만든다.
 추상어 대신 구체적이고 사소한 것으로 말한다.
 첫 문장은 붙잡는 문장이 아니라, 다음 문장을 보고 싶게 만드는 문장으로 쓴다.
@@ -2071,7 +2080,7 @@ async function runWhySuggest(){
 - info(전할 내용): 이 구간에서 무엇을 보여주는가
 - feel(느끼게 할 기분): 이 구간에서 보는 사람이 어떤 기분이어야 하는가. 짧고 구체적인 감각어로. 예) "숨막히는 느낌, 스트레스" / "피식 웃긴다, 철없네" / "해소, 풀린다, 직관적인 귀여움" / "멋있다, 그런데 너무 멀지 않은" / "감동, 살짝의 눈시울"
 
-중요: 앞 구간과 뒤 구간의 기분이 달라야 한다. 상황 구간에서 가볍게 웃겼다면 해석 구간에서는 뭉클하게 뒤집는 식으로, 감정의 낙차를 설계해라. 처음부터 끝까지 진지하면 지루해진다.
+중요: 앞 구간과 뒤 구간의 기분이 달라야 한다. 상황 구간에서 가볍게 웃겼다면 해석 구간에서는 뭉클하게 뒤집는다. 처음부터 끝까지 진지하면 지루해진다.
 반드시 JSON만 출력하고, 키 이름은 아래 영문 키를 글자 그대로 쓸 것:
 {${empty.map(s=>`"${s.key}":{"info":"전할 내용","feel":"느끼게 할 기분"}`).join(',')}}`, 1500);
     const obj=parseJSONBlock(raw,false);
@@ -2153,9 +2162,9 @@ async function exportPDF(){
 }
 
 /* 글자를 그대로 살린 PDF를 만들어요 (복사·검색이 됩니다) */
-// 나눔고딕을 씁니다. 다른 한글 글꼴은 띄어쓰기가 있는 문장에서 글자가 잘리는 경우가 있어요
-const PDF_FONT_URL='https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/nanumgothic/NanumGothic-Regular.ttf';
-const PDF_FONT_BOLD='https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/nanumgothic/NanumGothic-Bold.ttf';
+// 앱과 같은 Pretendard를 씁니다 (일부 한글 글꼴은 띄어쓰기 문장에서 글자가 잘려요)
+const PDF_FONT_URL='https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/public/static/alternative/Pretendard-Regular.ttf';
+const PDF_FONT_BOLD='https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/public/static/alternative/Pretendard-Bold.ttf';
 function loadOnce(src){
   return new Promise((res,rej)=>{
     if(document.querySelector(`script[data-src="${src}"]`)) return res();
@@ -2218,12 +2227,30 @@ async function makePDF(blocks, filename){
         lines.forEach(ln=>{ pdf.text(ln, L+4, y); y+=4.9; });
         y+=4.5;
       } else if(b.t==='sec'){
-        y+=2.5; need(12);
-        pdf.setDrawColor(225,225,225); pdf.setLineWidth(0.2); pdf.line(L, y-3.4, R, y-3.4);
-        put(b.label,{size:9.4,style:'bold',gap:5.2});
-        if(b.role) put(b.role,{size:8.4,color:[130,130,130],gap:4.3,indent:2});
-        put(b.v,{size:9.6,gap:4.9,indent:2});
-        y+=2.5;
+        // 앱 문서와 같은 표 모양: 왼쪽에 구간 이름, 오른쪽에 내용
+        const CW=30, GAP=4, cx=L+CW+GAP, cw=R-cx;
+        const labelParts=String(b.label).split('  ');
+        const roleLines = b.role ? String(b.role).split('\n').flatMap(x=>{ pdf.setFont('N','normal'); pdf.setFontSize(8.2); return pdf.splitTextToSize(x, cw); }) : [];
+        const bodyLines = String(b.v).split('\n').flatMap(x=>{ pdf.setFont('N','normal'); pdf.setFontSize(9.5); return pdf.splitTextToSize(x, cw); });
+        const blockH = roleLines.length*4.1 + (roleLines.length?1.6:0) + bodyLines.length*4.9 + 5;
+        need(Math.min(blockH, 40));
+        const top=y;
+        pdf.setDrawColor(228,228,228); pdf.setLineWidth(0.2); pdf.line(L, top-3.6, R, top-3.6);
+        // 왼쪽 라벨
+        pdf.setFont('N','bold'); pdf.setFontSize(8.8); pdf.setTextColor(60,60,60);
+        let ly=y;
+        pdf.splitTextToSize(labelParts[0]||'', CW).forEach(ln=>{ pdf.text(ln, L, ly); ly+=4.6; });
+        if(labelParts[1]){ pdf.setFont('N','normal'); pdf.setFontSize(7.6); pdf.setTextColor(160,160,160); pdf.text(labelParts[1], L, ly); }
+        // 오른쪽 내용
+        let cy=y;
+        if(roleLines.length){
+          pdf.setFont('N','normal'); pdf.setFontSize(8.2); pdf.setTextColor(150,150,150);
+          roleLines.forEach(ln=>{ if(cy+4.1>BOT){ pdf.addPage(); cy=22; } pdf.text(ln, cx, cy); cy+=4.1; });
+          cy+=1.6;
+        }
+        pdf.setFont('N','normal'); pdf.setFontSize(9.5); pdf.setTextColor(26,26,26);
+        bodyLines.forEach(ln=>{ if(cy+4.9>BOT){ pdf.addPage(); cy=22; } pdf.text(ln, cx, cy); cy+=4.9; });
+        y=Math.max(cy, ly)+3.4;
       }
     });
     const pages=pdf.internal.getNumberOfPages();
