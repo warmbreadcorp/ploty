@@ -2219,20 +2219,34 @@ async function makePDF(blocks, filename){
         y+=4; need(9);
         put(b.v,{size:10.5,style:'bold',gap:5.6}); y+=0.6;
       } else if(b.t==='box'){
-        const lines=pdf.splitTextToSize(String(b.v).replace(/\n{2,}/g,'\n'), W-8);
-        const h=lines.length*4.9+6;
-        need(h);
-        pdf.setFillColor(245,245,245); pdf.roundedRect(L, y-4, W, h, 1.6, 1.6, 'F');
-        pdf.setFont('N','normal'); pdf.setFontSize(9.6); pdf.setTextColor(26,26,26);
-        lines.forEach(ln=>{ pdf.text(ln, L+4, y); y+=4.9; });
-        y+=4.5;
+        pdf.setFont('N','normal'); pdf.setFontSize(9.6);
+        const lines=pdf.splitTextToSize(String(b.v).replace(/\n{2,}/g,'\n'), W-9);
+        const LH=4.9, ASC=2.6, DESC=0.9, PAD=3.6;   // 위아래 여백을 같게
+        const h=(lines.length-1)*LH + ASC + DESC + PAD*2;
+        need(h+2);
+        pdf.setFillColor(245,245,245); pdf.roundedRect(L, y-ASC-PAD, W, h, 1.8, 1.8, 'F');
+        pdf.setTextColor(26,26,26);
+        lines.forEach(ln=>{ pdf.text(ln, L+4.5, y); y+=LH; });
+        y += (PAD + DESC - LH) + 5;
       } else if(b.t==='sec'){
         // 앱 문서와 같은 표 모양: 왼쪽에 구간 이름, 오른쪽에 내용
         const CW=30, GAP=4, cx=L+CW+GAP, cw=R-cx;
         const labelParts=String(b.label).split('  ');
-        const roleLines = b.role ? String(b.role).split('\n').flatMap(x=>{ pdf.setFont('N','normal'); pdf.setFontSize(8.2); return pdf.splitTextToSize(x, cw); }) : [];
-        const bodyLines = String(b.v).split('\n').flatMap(x=>{ pdf.setFont('N','normal'); pdf.setFontSize(9.5); return pdf.splitTextToSize(x, cw); });
-        const blockH = roleLines.length*4.1 + (roleLines.length?1.6:0) + bodyLines.length*4.9 + 5;
+        // 불릿(·)이나 들여쓴 줄은 줄바꿈돼도 첫 글자 위치가 맞도록 내어쓰기 합니다
+        const BW=3.2;
+        pdf.setFont('N','normal'); pdf.setFontSize(8.2);
+        const roleItems = b.role ? String(b.role).split('\n').map(raw=>({bullet:'', indent:0, lines:pdf.splitTextToSize(raw, cw)})) : [];
+        pdf.setFontSize(9.5);
+        const bodyItems = String(b.v).split('\n').map(raw=>{
+          const isBullet = raw.startsWith('· ');
+          const isSub = /^\s{2,}/.test(raw);
+          const text = isBullet ? raw.slice(2) : raw.trim();
+          const indent = (isBullet||isSub) ? BW : 0;
+          return {bullet: isBullet?'·':'', indent, lines: pdf.splitTextToSize(text, cw-indent)};
+        });
+        const roleLines = roleItems.reduce((n,i)=>n+i.lines.length, 0);
+        const bodyLines = bodyItems.reduce((n,i)=>n+i.lines.length, 0);
+        const blockH = roleLines*4.1 + (roleLines?1.6:0) + bodyLines*4.9 + 5;
         need(Math.min(blockH, 40));
         const top=y;
         pdf.setDrawColor(228,228,228); pdf.setLineWidth(0.2); pdf.line(L, top-3.6, R, top-3.6);
@@ -2243,13 +2257,20 @@ async function makePDF(blocks, filename){
         if(labelParts[1]){ pdf.setFont('N','normal'); pdf.setFontSize(7.6); pdf.setTextColor(160,160,160); pdf.text(labelParts[1], L, ly); }
         // 오른쪽 내용
         let cy=y;
-        if(roleLines.length){
+        if(roleLines){
           pdf.setFont('N','normal'); pdf.setFontSize(8.2); pdf.setTextColor(150,150,150);
-          roleLines.forEach(ln=>{ if(cy+4.1>BOT){ pdf.addPage(); cy=22; } pdf.text(ln, cx, cy); cy+=4.1; });
+          roleItems.forEach(it=>it.lines.forEach(ln=>{ if(cy+4.1>BOT){ pdf.addPage(); cy=22; } pdf.text(ln, cx, cy); cy+=4.1; }));
           cy+=1.6;
         }
         pdf.setFont('N','normal'); pdf.setFontSize(9.5); pdf.setTextColor(26,26,26);
-        bodyLines.forEach(ln=>{ if(cy+4.9>BOT){ pdf.addPage(); cy=22; } pdf.text(ln, cx, cy); cy+=4.9; });
+        bodyItems.forEach(it=>{
+          it.lines.forEach((ln,i)=>{
+            if(cy+4.9>BOT){ pdf.addPage(); cy=22; }
+            if(i===0 && it.bullet) pdf.text(it.bullet, cx, cy);   // 첫 줄에만 점을 찍고
+            pdf.text(ln, cx+it.indent, cy);                       // 이어지는 줄도 같은 위치에서 시작
+            cy+=4.9;
+          });
+        });
         y=Math.max(cy, ly)+3.4;
       }
     });
