@@ -139,10 +139,14 @@ body.auth-locked header .util .hidden{display:none}
 .mat .more:hover{color:var(--ink)}
 .mat{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px}
 .mat p{white-space:pre-wrap;font-size:0.93rem}
-.mat .foot{display:flex;align-items:center;gap:10px;margin-top:auto}
+.mat .foot{display:flex;align-items:center;gap:10px;margin-top:auto;flex-wrap:wrap}
 .mat .foot .muted{flex:1}
 .mat .foot button{font-size:0.78rem;font-weight:600;color:var(--ink-60)}
 .mat .foot button:hover{color:var(--red)}
+.mat .foot button.keep{color:var(--ink)}
+.mat textarea{width:100%;border:none;border-radius:8px;background:#f5f5f5;padding:11px 12px;min-height:76px;resize:none;overflow:hidden;line-height:1.55;font-size:0.93rem}
+.mat textarea:focus{outline:1px solid var(--ink-30);outline-offset:-1px}
+.mat.editing{border-color:var(--ink-30)}
 
 /* ---------- 기획 상세 ---------- */
 .projbar{display:flex;align-items:center;gap:16px;margin-bottom:26px;flex-wrap:wrap;border-bottom:1px solid var(--ink);padding-bottom:14px}
@@ -849,6 +853,27 @@ function toggleMatType(id){
   m.type = m.type==='internal' ? 'external' : 'internal';
   save(); renderMaterials();
 }
+// 적어둔 재료를 다시 고쳐 쓰기
+let editingMat=null;
+function editMaterial(id){
+  editingMat=id; renderMaterials();
+  const ta=document.getElementById('mate-'+id);
+  if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+}
+function cancelEditMaterial(){ editingMat=null; renderMaterials(); }
+function saveMaterial(id){
+  const ta=document.getElementById('mate-'+id);
+  const m=state.materials.find(x=>x.id===id);
+  if(!ta || !m) return;
+  const t=ta.value.trim();
+  if(!t){ alert('내용을 적어주세요.'); ta.focus(); return; }
+  m.text=t; m.updatedAt=Date.now();
+  editingMat=null; save(); renderMaterials();
+}
+function matEditKey(e, id){
+  if(e.key==='Escape'){ e.preventDefault(); cancelEditMaterial(); }
+  else if(e.key==='Enter' && (e.metaKey||e.ctrlKey)){ e.preventDefault(); saveMaterial(id); }
+}
 function materialToProject(id){
   const m=state.materials.find(x=>x.id===id); if(!m) return;
   createProject(m.text.length>20?m.text.slice(0,20)+'…':m.text, m.text);
@@ -856,18 +881,41 @@ function materialToProject(id){
 }
 function renderMaterials(){
   const g=document.getElementById('mat-grid');
-  if(!state.materials.length){ g.innerHTML='<div class="empty-hint">아직 주운 재료가 없어요.<br>스치는 생각을 <b>한 줄씩</b> 던져두세요.</div>'; return; }
-  g.innerHTML = state.materials.map(m=>`
+  if(!state.materials.length){ editingMat=null; g.innerHTML='<div class="empty-hint">아직 주운 재료가 없어요.<br>스치는 생각을 <b>한 줄씩</b> 던져두세요.</div>'; return; }
+  // 고쳐 쓰는 중이면, 다시 그려도 지금 적고 있던 내용이 사라지지 않게 합니다
+  const liveEl = editingMat && document.getElementById('mate-'+editingMat);
+  const liveVal = liveEl ? liveEl.value : null;
+  g.innerHTML = state.materials.map(m=>{
+    const tag=`<button class="tag ${m.type} tagbtn" style="align-self:flex-start" onclick="toggleMatType('${m.id}')" title="누르면 종류가 바뀌어요">${m.type==='internal'?'내 생각·고민':'사람·사물'}</button>`;
+    const day=new Date(m.createdAt).toLocaleDateString('ko-KR');
+    if(m.id===editingMat) return `
+    <div class="mat editing" id="mat-${m.id}">
+      ${tag}
+      <textarea id="mate-${m.id}" onkeydown="matEditKey(event,'${m.id}')" placeholder="내용을 적어보세요">${esc(m.text)}</textarea>
+      <div class="foot">
+        <span class="muted">${day}</span>
+        <button class="keep" onclick="saveMaterial('${m.id}')">저장</button>
+        <button onclick="cancelEditMaterial()">취소</button>
+      </div>
+    </div>`;
+    return `
     <div class="mat ${m.text.length>220?'clamp':''}" id="mat-${m.id}">
-      <button class="tag ${m.type} tagbtn" style="align-self:flex-start" onclick="toggleMatType('${m.id}')" title="누르면 종류가 바뀌어요">${m.type==='internal'?'내 생각·고민':'사람·사물'}</button>
+      ${tag}
       <p>${esc(m.text)}</p>
       ${m.text.length>220?`<button class="more" onclick="matToggle('${m.id}',this)">펼쳐 보기</button>`:''}
       <div class="foot">
-        <span class="muted">${new Date(m.createdAt).toLocaleDateString('ko-KR')}</span>
+        <span class="muted">${day}</span>
+        <button onclick="editMaterial('${m.id}')">수정</button>
         <button onclick="materialToProject('${m.id}')">기획 시작 →</button>
         <button onclick="delMaterial('${m.id}')">삭제</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+  if(editingMat){
+    const ta=document.getElementById('mate-'+editingMat);
+    if(ta){ if(liveVal!=null) ta.value=liveVal; autoGrow(ta); }
+    else editingMat=null;
+  }
 }
 
 /* ============================================================
