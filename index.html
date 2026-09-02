@@ -2085,56 +2085,68 @@ async function runWhySuggest(){
 async function exportPDF(){
   const p=proj(); if(!p) return;
   const as=activeScript();
+  // 문서를 구조로 만들어 두면, 글자를 그대로 살린 PDF로 그릴 수 있어요
+  const blocks=[];
+  blocks.push({t:'title', v:p.title||'무제'});
+  const metaBits=[];
+  if(p.label) metaBits.push('반응 · '+p.label);
+  if(p.score!=null) metaBits.push(p.score+'/100점');
+  metaBits.push(new Date().toLocaleDateString('ko-KR'));
+  metaBits.push('(ploty)');
+  blocks.push({t:'meta', v:metaBits.join('  ·  ')});
+
+  blocks.push({t:'h', v:'시작점'});
+  blocks.push({t:'box', v:p.card.start||'(비어있음)'});
+
+  blocks.push({t:'h', v:'왜? 파고들기'});
   const chain=Array.isArray(p.card.chain)?p.card.chain.filter(c=>c.v&&c.v.trim()):[];
-  const chainHtml = chain.length
-    ? `<div class="box">${esc(p.card.start)}${chain.map(c=>`<br><span class="arr">${c.t==='eq'?'= 바꿔 말하면':'↓ 왜 그럴까?'}</span><br>${esc(c.v)}`).join('')}</div>`
-    : `<div class="box">${esc(p.card.decompose||'(비어있음)')}</div>`;
-  const beatsHtml = TEMPLATES[p.template].sections.map(sec=>{
-    const bs=(p.beats[sec.key]||[]);
+  if(chain.length){
+    const lines=[p.card.start||''];
+    chain.forEach(c=>{ lines.push((c.t==='eq'?'= 바꿔 말하면':'↓ 왜 그럴까?')); lines.push(c.v); });
+    blocks.push({t:'box', v:lines.filter(x=>x&&x.trim()).join('\n')});
+  } else {
+    blocks.push({t:'box', v:p.card.decompose||'(비어있음)'});
+  }
+
+  blocks.push({t:'h', v:'보는 사람이 얻는 것'+(p.card.benefitType?`  (${p.card.benefitType})`:'')});
+  blocks.push({t:'box', v:p.card.benefit||'(비어있음)'});
+  blocks.push({t:'h', v:'하고 싶은 말'});
+  blocks.push({t:'box', v:p.card.message||'(비어있음)'});
+  blocks.push({t:'h', v:'대신 보여줄 이야기'});
+  blocks.push({t:'box', v:p.card.keycontent||'(비어있음)'});
+
+  blocks.push({t:'h', v:`플롯  (${TEMPLATES[p.template].name})`});
+  TEMPLATES[p.template].sections.forEach(sec=>{
     const w=whyGet(p,sec.key);
-    const role=[w.info.trim()&&`전할 내용: ${w.info.trim()}`, w.feel.trim()&&`느끼게 할 기분: ${w.feel.trim()}`].filter(Boolean).join(' · ');
-    return `<tr><td class="n"><b>${esc(sec.label)}</b><br><span class="arr">${esc(sec.time||'')}</span></td><td>${role?`<span class="arr">${esc(role)}</span><br>`:''}${bs.length?bs.map(b=>esc(b.text)+(b.note?`<br><span class="arr">메모: ${esc(b.note)}</span>`:'')).join('<br>'):'<span class="arr">(비어있음)</span>'}</td></tr>`;
-  }).join('');
+    const role=[w.info.trim()&&'전할 내용: '+w.info.trim(), w.feel.trim()&&'느끼게 할 기분: '+w.feel.trim()].filter(Boolean).join('\n');
+    const bs=(p.beats[sec.key]||[]);
+    const body=bs.length
+      ? bs.map(b=>'· '+b.text+(b.note?'\n   메모: '+b.note:'')).join('\n')
+      : '(비어있음)';
+    blocks.push({t:'sec', label:sec.label+(sec.time?'  '+sec.time:''), role, v:body});
+  });
+
   const hasScript = as && SCRIPT_GROUPS.some(g=>(as.lines[g.key]||[]).some(l=>l&&l.trim()));
-  const scriptHtml = hasScript ? `<h2>대본 <span class="arr">(${esc(as.label)})</span></h2><table>`+SCRIPT_GROUPS.map(g=>{
-    const conti=(as.conti&&as.conti[g.key])||[];
-    const rows=(as.lines[g.key]||[]).map((l,i)=>({l,c:conti[i]||''})).filter(r=>r.l&&r.l.trim());
-    return rows.length?`<tr><td class="n"><b>${esc(g.label)}</b></td><td>${rows.map(r=>esc(r.l)+(r.c?`<br><span class="arr">화면: ${esc(r.c)}</span>`:'')).join('<br>')}</td></tr>`:'';
-  }).join('')+`</table>` : '';
-  const html=`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(p.title)}</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<style>
-body{font-family:"Pretendard Variable",Pretendard,-apple-system,sans-serif;color:#1a1a1a;max-width:720px;margin:44px auto;padding:0 24px;line-height:1.65;font-size:14px}
-h1{font-size:25px;letter-spacing:-0.02em;border-bottom:2px solid #1a1a1a;padding-bottom:12px;margin-bottom:6px}
-h2{font-size:14px;margin:26px 0 6px;letter-spacing:0.02em}
-.meta{color:#888;font-size:12px;margin-bottom:8px}
-.lbl{display:inline-block;border:1px solid #1a1a1a;padding:1px 8px;font-size:11px;font-weight:700;margin-right:6px}
-.box{background:#f5f5f5;padding:12px 14px;margin:4px 0 2px;white-space:pre-wrap}
-.arr{color:#999;font-size:11.5px}
-table{width:100%;border-collapse:collapse;margin-top:4px}
-td{border-top:1px solid #e5e5e5;padding:9px 8px;vertical-align:top}
-td.n{width:92px;color:#555;font-size:12px}
-.foot{margin-top:40px;color:#bbb;font-size:11px;border-top:1px solid #e5e5e5;padding-top:10px}
-@media print{body{margin:8mm auto}}
-</style></head><body>
-<h1>${esc(p.title)}</h1>
-<div class="meta">${p.label?`<span class="lbl">${esc(p.label)}</span>`:''}${p.score!=null?`${p.score}/100점 · `:''}${new Date().toLocaleDateString('ko-KR')} · (ploty)</div>
-<h2>시작점</h2><div class="box">${esc(p.card.start||'(비어있음)')}</div>
-<h2>왜? 파고들기</h2>${chainHtml}
-<h2>보는 사람이 얻는 것${p.card.benefitType?` <span class="arr">(${esc(p.card.benefitType)})</span>`:''}</h2><div class="box">${esc(p.card.benefit||'(비어있음)')}</div>
-<h2>하고 싶은 말</h2><div class="box">${esc(p.card.message||'(비어있음)')}</div>
-<h2>대신 보여줄 이야기</h2><div class="box">${esc(p.card.keycontent||'(비어있음)')}</div>
-<h2>플롯 <span class="arr">(${esc(TEMPLATES[p.template].name)})</span></h2><table>${beatsHtml}</table>
-${scriptHtml}
-<div class="foot">ploty에서 내보냄</div>
-</body></html>`;
-  // 파일로 바로 내려받아요. 열어서 인쇄하면 PDF로도 저장할 수 있어요
+  if(hasScript){
+    blocks.push({t:'h', v:`대본  (${as.label})`});
+    SCRIPT_GROUPS.forEach(g=>{
+      const conti=(as.conti&&as.conti[g.key])||[];
+      const rows=(as.lines[g.key]||[]).map((l,i)=>({l,c:conti[i]||''})).filter(r=>r.l&&r.l.trim());
+      if(!rows.length) return;
+      const body=rows.map(r=>'· '+r.l+(r.c?'\n   화면: '+r.c:'')).join('\n');
+      blocks.push({t:'sec', label:g.label, role:'', v:body});
+    });
+  }
+
   const stamp=new Date().toISOString().slice(0,10);
   const safe=(p.title||'기획안').replace(/[\\/:*?"<>|]/g,' ').trim().slice(0,40)||'기획안';
-  return makePDF(html, `${safe}_${stamp}`);
+  return makePDF(blocks, `${safe}_${stamp}`);
 }
 
-/* 화면에 그린 문서를 PDF 파일로 만들어 내려받아요 */
+/* 글자를 그대로 살린 PDF를 만들어요 (복사·검색이 됩니다) */
+// 나눔고딕을 씁니다. 다른 한글 글꼴은 띄어쓰기가 있는 문장에서 글자가 잘리는 경우가 있어요
+const PDF_FONT_URL='https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/nanumgothic/NanumGothic-Regular.ttf';
+const PDF_FONT_BOLD='https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/nanumgothic/NanumGothic-Bold.ttf';
 function loadOnce(src){
   return new Promise((res,rej)=>{
     if(document.querySelector(`script[data-src="${src}"]`)) return res();
@@ -2144,42 +2156,77 @@ function loadOnce(src){
     document.head.appendChild(s);
   });
 }
-async function makePDF(html, filename){
+const __fontCache={};
+async function fetchFontB64(url){
+  if(__fontCache[url]) return __fontCache[url];
+  const res=await fetch(url);
+  if(!res.ok) throw new Error('글꼴을 불러오지 못했어요.');
+  const buf=await res.arrayBuffer();
+  const bytes=new Uint8Array(buf);
+  let bin='';
+  for(let i=0;i<bytes.length;i+=8192) bin+=String.fromCharCode.apply(null, bytes.subarray(i,i+8192));
+  __fontCache[url]=btoa(bin);
+  return __fontCache[url];
+}
+async function makePDF(blocks, filename){
   const btns=[...document.querySelectorAll('[onclick*="exportPDF"]')];
   const orig=btns.map(b=>b.innerHTML);
   btns.forEach(b=>{ b.disabled=true; b.innerHTML='<span class="spin"></span>만드는 중'; });
-  let holder=null;
   try{
-    await loadOnce('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
     await loadOnce('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
-    // 화면 밖에 A4 폭으로 그려둡니다 (안내문은 뺍니다)
-    const body=html.replace(/^[\s\S]*<body>/,'').replace(/<\/body>[\s\S]*$/,'').replace(/<div class="tip">[\s\S]*?<\/div>/,'');
-    const css=(html.match(/<style>([\s\S]*?)<\/style>/)||[])[1]||'';
-    holder=document.createElement('div');
-    holder.style.cssText='position:fixed;left:-10000px;top:0;width:794px;background:#fff;z-index:-1';
-    holder.innerHTML=`<style>${css}</style><div style="padding:40px 44px">${body}</div>`;
-    document.body.appendChild(holder);
-    await new Promise(r=>setTimeout(r,250)); // 글꼴이 자리잡을 시간
-    const canvas=await html2canvas(holder,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false});
+    const [reg,bold]=await Promise.all([fetchFontB64(PDF_FONT_URL), fetchFontB64(PDF_FONT_BOLD)]);
     const {jsPDF}=window.jspdf;
     const pdf=new jsPDF('p','mm','a4');
-    const pageW=210, pageH=297;
-    const pxPerPage=Math.floor(canvas.width*(pageH/pageW)); // A4 비율로 자를 높이
-    let offset=0, page=0;
-    while(offset<canvas.height){
-      const h=Math.min(pxPerPage, canvas.height-offset);
-      const slice=document.createElement('canvas');
-      slice.width=canvas.width; slice.height=h;
-      slice.getContext('2d').drawImage(canvas,0,offset,canvas.width,h,0,0,canvas.width,h);
-      if(page>0) pdf.addPage();
-      pdf.addImage(slice.toDataURL('image/jpeg',0.92),'JPEG',0,0,pageW,h*pageW/canvas.width);
-      offset+=pxPerPage; page++;
+    pdf.addFileToVFS('N-R.ttf', reg); pdf.addFont('N-R.ttf','N','normal');
+    pdf.addFileToVFS('N-B.ttf', bold); pdf.addFont('N-B.ttf','N','bold');
+
+    const L=20, R=190, W=R-L, BOT=278;
+    let y=22;
+    const need=(h)=>{ if(y+h>BOT){ pdf.addPage(); y=22; } };
+    const put=(text, {size=10, style='normal', color=[26,26,26], gap=4.9, indent=0, maxW=W}={})=>{
+      pdf.setFont('N',style); pdf.setFontSize(size); pdf.setTextColor(...color);
+      String(text).split('\n').forEach(para=>{
+        const lines=pdf.splitTextToSize(para||' ', maxW-indent);
+        lines.forEach(ln=>{ need(gap); pdf.text(ln, L+indent, y); y+=gap; });
+      });
+    };
+    blocks.forEach(b=>{
+      if(b.t==='title'){
+        need(14); pdf.setFont('N','bold'); pdf.setFontSize(17); pdf.setTextColor(26,26,26);
+        pdf.splitTextToSize(b.v, W).forEach(ln=>{ need(8); pdf.text(ln, L, y); y+=8; });
+        pdf.setDrawColor(26,26,26); pdf.setLineWidth(0.6); pdf.line(L, y-2, R, y-2); y+=5;
+      } else if(b.t==='meta'){
+        put(b.v,{size:8.5,color:[140,140,140],gap:4.4}); y+=3;
+      } else if(b.t==='h'){
+        y+=4; need(9);
+        put(b.v,{size:10.5,style:'bold',gap:5.6}); y+=0.6;
+      } else if(b.t==='box'){
+        const lines=pdf.splitTextToSize(String(b.v).replace(/\n{2,}/g,'\n'), W-8);
+        const h=lines.length*4.9+6;
+        need(h);
+        pdf.setFillColor(245,245,245); pdf.roundedRect(L, y-4, W, h, 1.6, 1.6, 'F');
+        pdf.setFont('N','normal'); pdf.setFontSize(9.6); pdf.setTextColor(26,26,26);
+        lines.forEach(ln=>{ pdf.text(ln, L+4, y); y+=4.9; });
+        y+=4.5;
+      } else if(b.t==='sec'){
+        y+=2.5; need(12);
+        pdf.setDrawColor(225,225,225); pdf.setLineWidth(0.2); pdf.line(L, y-3.4, R, y-3.4);
+        put(b.label,{size:9.4,style:'bold',gap:5.2});
+        if(b.role) put(b.role,{size:8.4,color:[130,130,130],gap:4.3,indent:2});
+        put(b.v,{size:9.6,gap:4.9,indent:2});
+        y+=2.5;
+      }
+    });
+    const pages=pdf.internal.getNumberOfPages();
+    for(let i=1;i<=pages;i++){
+      pdf.setPage(i); pdf.setFont('N','normal'); pdf.setFontSize(7.6); pdf.setTextColor(180,180,180);
+      pdf.text('ploty에서 내보냄', L, 289);
+      pdf.text(i+' / '+pages, R, 289, {align:'right'});
     }
     pdf.save(filename+'.pdf');
   }catch(e){
     alert('PDF를 만들지 못했어요: '+(e.message||e));
   }finally{
-    if(holder) holder.remove();
     btns.forEach((b,i)=>{ b.disabled=false; b.innerHTML=orig[i]; });
   }
 }
