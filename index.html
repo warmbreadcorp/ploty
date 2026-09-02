@@ -2217,7 +2217,7 @@ async function makePDF(blocks, filename){
         put(b.v,{size:8.5,color:[140,140,140],gap:4.4}); y+=3;
       } else if(b.t==='h'){
         y+=4.5; need(9);
-        put(b.v,{size:10.5,style:'bold',gap:5.6}); y+=5.2;  // 제목과 아래 내용이 붙지 않게
+        put(b.v,{size:10.5,style:'bold',gap:5.6}); y+=3.8;  // 제목과 아래 내용이 붙지 않게
       } else if(b.t==='box'){
         pdf.setFont('N','normal'); pdf.setFontSize(9.6);
         const lines=pdf.splitTextToSize(String(b.v).replace(/\n{2,}/g,'\n'), W-9);
@@ -2249,7 +2249,7 @@ async function makePDF(blocks, filename){
         const blockH = roleLines*4.1 + (roleLines?1.6:0) + bodyLines*4.9 + 5;
         need(Math.min(blockH, 40));
         const top=y;
-        pdf.setDrawColor(228,228,228); pdf.setLineWidth(0.2); pdf.line(L, top-3.6, R, top-3.6);
+        pdf.setDrawColor(228,228,228); pdf.setLineWidth(0.2); pdf.line(L, top-4.8, R, top-4.8);  // 선과 글자가 붙지 않게
         // 왼쪽 라벨
         pdf.setFont('N','bold'); pdf.setFontSize(8.8); pdf.setTextColor(60,60,60);
         let ly=y;
@@ -2271,7 +2271,7 @@ async function makePDF(blocks, filename){
             cy+=4.9;
           });
         });
-        y=Math.max(cy, ly)+3.4;
+        y=Math.max(cy, ly)+4.4;
       }
     });
     const pages=pdf.internal.getNumberOfPages();
