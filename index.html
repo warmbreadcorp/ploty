@@ -137,7 +137,8 @@ body.auth-locked header .util .hidden{display:none}
 .mat.clamp p{display:-webkit-box;-webkit-line-clamp:7;-webkit-box-orient:vertical;overflow:hidden}
 .mat .more{align-self:flex-start;font-size:0.78rem;font-weight:500;color:var(--ink-60);border-bottom:1px solid var(--ink-30);padding:0}
 .mat .more:hover{color:var(--ink)}
-.mat{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.mat{position:relative;background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.mat .tagbtn{max-width:calc(100% - 34px)}
 .mat p{white-space:pre-wrap;font-size:0.93rem}
 .mat .foot{display:flex;align-items:center;gap:10px;margin-top:auto;flex-wrap:wrap}
 .mat .foot .muted{flex:1}
@@ -900,14 +901,17 @@ function renderMaterials(){
     </div>`;
     return `
     <div class="mat ${m.text.length>220?'clamp':''}" id="mat-${m.id}">
+      <button class="pmenu-btn" onclick="event.stopPropagation();toggleCardMenu('${m.id}',event)" title="더보기">⋯</button>
+      <div class="pmenu hidden" id="pm-${m.id}" onclick="event.stopPropagation()">
+        <button onclick="editMaterial('${m.id}')">수정</button>
+        <button onclick="delMaterial('${m.id}')">삭제</button>
+      </div>
       ${tag}
       <p>${esc(m.text)}</p>
       ${m.text.length>220?`<button class="more" onclick="matToggle('${m.id}',this)">펼쳐 보기</button>`:''}
       <div class="foot">
         <span class="muted">${day}</span>
-        <button onclick="editMaterial('${m.id}')">수정</button>
         <button onclick="materialToProject('${m.id}')">기획 시작 →</button>
-        <button onclick="delMaterial('${m.id}')">삭제</button>
       </div>
     </div>`;
   }).join('');
