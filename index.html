@@ -468,7 +468,7 @@ body.auth-locked header .util .hidden{display:none}
       <textarea class="title" id="detail-title" rows="1" oninput="onTitle(this.value)" onkeydown="if(event.key==='Enter')event.preventDefault()"></textarea>
       <span class="muted" id="save-ind" style="font-size:0.76rem"></span>
       <button class="btn line sm" onclick="duplicateProject(proj().id)" title="이 기획안을 복사해서 다른 방향으로 써봐요">복제</button>
-      <button class="btn line sm" onclick="exportPDF()" title="문서 파일로 내려받아요. 열어서 인쇄하면 PDF로 저장할 수 있어요">문서 내보내기</button>
+      <button class="btn line sm" onclick="exportPDF()" title="PDF 파일로 내려받아요">PDF 내보내기</button>
       <div class="score-badge" id="detail-score" onclick="document.querySelector('.ai-panel').scrollIntoView({behavior:'smooth',block:'center'})" style="cursor:pointer" title="AI 코치로 이동"></div>
     </div>
 
@@ -2082,7 +2082,7 @@ async function runWhySuggest(){
 }
 
 /* --- PDF 내보내기 --- */
-function exportPDF(){
+async function exportPDF(){
   const p=proj(); if(!p) return;
   const as=activeScript();
   const chain=Array.isArray(p.card.chain)?p.card.chain.filter(c=>c.v&&c.v.trim()):[];
@@ -2116,11 +2116,7 @@ td{border-top:1px solid #e5e5e5;padding:9px 8px;vertical-align:top}
 td.n{width:92px;color:#555;font-size:12px}
 .foot{margin-top:40px;color:#bbb;font-size:11px;border-top:1px solid #e5e5e5;padding-top:10px}
 @media print{body{margin:8mm auto}}
-.tip{background:#fff4f5;border:1px solid #ffd7dc;border-radius:8px;padding:11px 14px;font-size:13px;color:#555;margin-bottom:22px}
-.tip b{color:#ff1e3c}
-@media print{.tip{display:none}}
 </style></head><body>
-<div class="tip"><b>PDF로 저장하시려면</b> 이 화면에서 인쇄(⌘+P 또는 Ctrl+P)를 누르고, 대상에서 'PDF로 저장'을 고르시면 돼요. 이 안내문은 인쇄물에는 나오지 않아요.</div>
 <h1>${esc(p.title)}</h1>
 <div class="meta">${p.label?`<span class="lbl">${esc(p.label)}</span>`:''}${p.score!=null?`${p.score}/100점 · `:''}${new Date().toLocaleDateString('ko-KR')} · (ploty)</div>
 <h2>시작점</h2><div class="box">${esc(p.card.start||'(비어있음)')}</div>
@@ -2135,12 +2131,57 @@ ${scriptHtml}
   // 파일로 바로 내려받아요. 열어서 인쇄하면 PDF로도 저장할 수 있어요
   const stamp=new Date().toISOString().slice(0,10);
   const safe=(p.title||'기획안').replace(/[\\/:*?"<>|]/g,' ').trim().slice(0,40)||'기획안';
-  const blob=new Blob(['﻿'+html], {type:'text/html;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url; a.download=`${safe}_${stamp}.html`;
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url), 1500);
+  return makePDF(html, `${safe}_${stamp}`);
+}
+
+/* 화면에 그린 문서를 PDF 파일로 만들어 내려받아요 */
+function loadOnce(src){
+  return new Promise((res,rej)=>{
+    if(document.querySelector(`script[data-src="${src}"]`)) return res();
+    const s=document.createElement('script');
+    s.src=src; s.dataset.src=src;
+    s.onload=()=>res(); s.onerror=()=>rej(new Error('필요한 파일을 불러오지 못했어요. 인터넷 연결을 확인해주세요.'));
+    document.head.appendChild(s);
+  });
+}
+async function makePDF(html, filename){
+  const btns=[...document.querySelectorAll('[onclick*="exportPDF"]')];
+  const orig=btns.map(b=>b.innerHTML);
+  btns.forEach(b=>{ b.disabled=true; b.innerHTML='<span class="spin"></span>만드는 중'; });
+  let holder=null;
+  try{
+    await loadOnce('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
+    await loadOnce('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
+    // 화면 밖에 A4 폭으로 그려둡니다 (안내문은 뺍니다)
+    const body=html.replace(/^[\s\S]*<body>/,'').replace(/<\/body>[\s\S]*$/,'').replace(/<div class="tip">[\s\S]*?<\/div>/,'');
+    const css=(html.match(/<style>([\s\S]*?)<\/style>/)||[])[1]||'';
+    holder=document.createElement('div');
+    holder.style.cssText='position:fixed;left:-10000px;top:0;width:794px;background:#fff;z-index:-1';
+    holder.innerHTML=`<style>${css}</style><div style="padding:40px 44px">${body}</div>`;
+    document.body.appendChild(holder);
+    await new Promise(r=>setTimeout(r,250)); // 글꼴이 자리잡을 시간
+    const canvas=await html2canvas(holder,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false});
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF('p','mm','a4');
+    const pageW=210, pageH=297;
+    const pxPerPage=Math.floor(canvas.width*(pageH/pageW)); // A4 비율로 자를 높이
+    let offset=0, page=0;
+    while(offset<canvas.height){
+      const h=Math.min(pxPerPage, canvas.height-offset);
+      const slice=document.createElement('canvas');
+      slice.width=canvas.width; slice.height=h;
+      slice.getContext('2d').drawImage(canvas,0,offset,canvas.width,h,0,0,canvas.width,h);
+      if(page>0) pdf.addPage();
+      pdf.addImage(slice.toDataURL('image/jpeg',0.92),'JPEG',0,0,pageW,h*pageW/canvas.width);
+      offset+=pxPerPage; page++;
+    }
+    pdf.save(filename+'.pdf');
+  }catch(e){
+    alert('PDF를 만들지 못했어요: '+(e.message||e));
+  }finally{
+    if(holder) holder.remove();
+    btns.forEach((b,i)=>{ b.disabled=false; b.innerHTML=orig[i]; });
+  }
 }
 
 /* ============================================================
