@@ -442,7 +442,11 @@ body.auth-locked header .util .hidden{display:none}
     </div>
     <div class="sect" style="margin-top:44px">
       <div class="section-title">보관함 <span class="muted" id="proj-count" style="font-size:0.85rem;font-weight:500"></span></div>
-      <div class="section-sub">작성한 기획안이 모두 자동 저장돼요. 카드를 누르면 이어서 작업할 수 있어요.</div>
+      <div class="section-sub" id="home-sub">작성한 기획안이 모두 자동 저장돼요. 카드를 누르면 이어서 작업할 수 있어요.</div>
+      <div class="tmpl-pick share-only hidden" style="margin-top:12px">
+        <button id="htab-mine" class="on" onclick="setHomeTab('mine')">내 기획안</button>
+        <button id="htab-shared" onclick="setHomeTab('shared')">회사 공용</button>
+      </div>
     </div>
     <div id="proj-grid" class="proj-grid"></div>
   </div>
@@ -451,7 +455,11 @@ body.auth-locked header .util .hidden{display:none}
   <div id="view-materials" class="hidden">
     <div class="sect">
       <div class="section-title">재료함</div>
-      <div class="section-sub">대화, 읽은 글, 뉴스, 문득 떠오른 생각을 한 줄씩 모아두세요. 평범해도 괜찮아요. 모두가 하는 생각이 모두가 볼 이유가 되니까요.</div>
+      <div class="section-sub" id="mat-sub">대화, 읽은 글, 뉴스, 문득 떠오른 생각을 한 줄씩 모아두세요. 평범해도 괜찮아요. 모두가 하는 생각이 모두가 볼 이유가 되니까요.</div>
+      <div class="tmpl-pick share-only hidden" style="margin-top:12px">
+        <button id="mtab-mine" class="on" onclick="setMatTab('mine')">내 재료</button>
+        <button id="mtab-shared" onclick="setMatTab('shared')">회사 공용</button>
+      </div>
     </div>
     <div class="addbox">
       <textarea id="mat-input" placeholder="한 줄이면 충분해요  (⌘+Enter)" onkeydown="if(event.key==='Enter'&&(event.metaKey||event.ctrlKey))addMaterial()"></textarea>
@@ -619,6 +627,14 @@ body.auth-locked header .util .hidden{display:none}
     <input id="my-pw" type="password" placeholder="새 비밀번호 (6자 이상)" autocomplete="new-password">
     <input id="my-pw2" type="password" placeholder="새 비밀번호 한 번 더" autocomplete="new-password" onkeydown="if(event.key==='Enter')changePw()">
     <div class="muted" id="my-msg" style="margin-bottom:12px"></div>
+    <div id="my-share" class="hidden">
+      <p style="margin-top:14px;margin-bottom:6px">공용함 멤버 관리 <span class="muted" style="font-size:0.78rem">(추가된 직원에게만 공용함이 보여요)</span></p>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input id="share-add-id" placeholder="추가할 직원 아이디" style="flex:1" onkeydown="if(event.key==='Enter')shareAddMember()">
+        <button class="btn line" onclick="shareAddMember()">추가</button>
+      </div>
+      <div class="muted" id="share-members" style="margin-bottom:12px"></div>
+    </div>
     <p style="margin-top:14px;margin-bottom:6px">이 브라우저에 보관된 백업</p>
     <div class="muted" id="my-backups" style="margin-bottom:12px"></div>
     <div class="row" style="margin-bottom:12px">
@@ -793,6 +809,7 @@ function starsHTML(score){
   return `<span class="stars">${h}</span>`;
 }
 function renderHome(){
+  if(homeTab==='shared' && shareRole){ renderSharedProjects(); return; }
   const g=document.getElementById('proj-grid');
   const cnt=document.getElementById('proj-count');
   if(cnt) cnt.textContent = state.projects.length ? state.projects.length+'개' : '';
@@ -809,6 +826,7 @@ function renderHome(){
       <button class="pmenu-btn" onclick="event.stopPropagation();toggleCardMenu('${p.id}',event)" title="더보기">⋯</button>
       <div class="pmenu hidden" id="pm-${p.id}" onclick="event.stopPropagation()">
         <button onclick="duplicateProject('${p.id}')">복제</button>
+        ${shareRole?`<button onclick="shareProjectToShared('${p.id}')">공용함에 올리기</button>`:''}
         <button onclick="deleteProject('${p.id}')">삭제</button>
         <div class="pmenu-marks">
           ${MARK_COLORS.map(c=>`<button class="mk ${c.v}${p.mark===c.v?' on':''}" title="${c.l}" onclick="setMark('${p.id}','${c.v}')"></button>`).join('')}
@@ -834,6 +852,7 @@ function openProject(id){ state.activeProject=id; save(); switchView('detail'); 
 function addMaterial(){
   const t = document.getElementById('mat-input').value.trim();
   if(!t) return;
+  if(matTab==='shared' && shareRole){ addSharedMaterial(t); return; }
   state.materials.unshift({id:uid(), text:t, type:document.getElementById('mat-type').value, createdAt:Date.now()});
   document.getElementById('mat-input').value='';
   save(); renderMaterials();
@@ -881,6 +900,7 @@ function materialToProject(id){
   switchView('detail');
 }
 function renderMaterials(){
+  if(matTab==='shared' && shareRole){ renderSharedMaterials(); return; }
   const g=document.getElementById('mat-grid');
   if(!state.materials.length){ editingMat=null; g.innerHTML='<div class="empty-hint">아직 주운 재료가 없어요.<br>스치는 생각을 <b>한 줄씩</b> 던져두세요.</div>'; return; }
   // 고쳐 쓰는 중이면, 다시 그려도 지금 적고 있던 내용이 사라지지 않게 합니다
@@ -904,6 +924,7 @@ function renderMaterials(){
       <button class="pmenu-btn" onclick="event.stopPropagation();toggleCardMenu('${m.id}',event)" title="더보기">⋯</button>
       <div class="pmenu hidden" id="pm-${m.id}" onclick="event.stopPropagation()">
         <button onclick="editMaterial('${m.id}')">수정</button>
+        ${shareRole?`<button onclick="shareMaterialToShared('${m.id}')">공용함에 올리기</button>`:''}
         <button onclick="delMaterial('${m.id}')">삭제</button>
       </div>
       ${tag}
@@ -970,23 +991,27 @@ function setMark(id, color){
 }
 document.addEventListener('click', ()=>{ document.querySelectorAll('.pmenu').forEach(m=>m.classList.add('hidden')); });
 
-/* 같은 소재로 다른 방향을 시도할 때, 기획안을 통째로 복사 */
-function duplicateProject(id){
-  const src=state.projects.find(x=>x.id===id); if(!src) return;
-  let copy; try{ copy=JSON.parse(JSON.stringify(src)); }catch(e){ alert('복제하지 못했어요.'); return; }
+/* 기획안 통째 복사 (장면·대본 버전은 새 번호를 받아 원본과 섞이지 않게) */
+function cloneProject(src){
+  const copy=JSON.parse(JSON.stringify(src));
   copy.id=uid();
   copy.createdAt=Date.now();
-  const base=(src.title||'무제').replace(/\s*\(사본( \d+)?\)$/,'');
-  let n=1, title=base+' (사본)';
-  while(state.projects.some(x=>x.title===title)){ n++; title=base+' (사본 '+n+')'; }
-  copy.title=title;
-  // 장면과 대본 버전은 새 번호를 받아야 원본과 섞이지 않아요
   Object.keys(copy.beats||{}).forEach(k=>{
     copy.beats[k]=(copy.beats[k]||[]).map(b=>({...b, id:uid()}));
   });
   const idMap={};
   copy.scripts=(copy.scripts||[]).map(s=>{ const nid=uid(); idMap[s.id]=nid; return {...s, id:nid}; });
   copy.activeScript=idMap[src.activeScript]||(copy.scripts[0]&&copy.scripts[0].id)||null;
+  return copy;
+}
+/* 같은 소재로 다른 방향을 시도할 때 */
+function duplicateProject(id){
+  const src=state.projects.find(x=>x.id===id); if(!src) return;
+  let copy; try{ copy=cloneProject(src); }catch(e){ alert('복제하지 못했어요.'); return; }
+  const base=(src.title||'무제').replace(/\s*\(사본( \d+)?\)$/,'');
+  let n=1, title=base+' (사본)';
+  while(state.projects.some(x=>x.title===title)){ n++; title=base+' (사본 '+n+')'; }
+  copy.title=title;
   if(copy.score!=null) copy.scoreStale=true; // 방향을 바꿀 테니 다시 채점하도록 표시
   state.projects.unshift(copy);
   state.activeProject=copy.id;
@@ -2478,6 +2503,279 @@ function mergeArrays(localArr, cloudArr, localPriority){
   return [...map.values()];
 }
 
+/* ============================================================
+   회사 공용함 (권한 받은 계정에만 보임)
+   개인 데이터와 완전히 분리된 저장 공간. 올리기는 항상 복사.
+============================================================ */
+let shareRole=null;                                   // null | 'member' | 'admin'
+let shared={materials:[],projects:[],deleted:{}};     // 공용함 내용 (서버에서 받아옴)
+let homeTab='mine', matTab='mine';
+let editingSharedMat=null;
+
+async function checkShare(){
+  shareRole=null;
+  try{
+    const {data}=await supa.from('ploty_share_members').select('is_admin').eq('user_id',supaUser.id).maybeSingle();
+    if(data) shareRole = data.is_admin ? 'admin' : 'member';
+  }catch(e){} // 아직 공용함이 준비되지 않았거나 멤버가 아니면 조용히 숨김
+  homeTab='mine'; matTab='mine';
+  document.querySelectorAll('.share-only').forEach(el=>el.classList.toggle('hidden', !shareRole));
+}
+function setHomeTab(t){
+  homeTab=t;
+  document.getElementById('htab-mine').classList.toggle('on', t==='mine');
+  document.getElementById('htab-shared').classList.toggle('on', t==='shared');
+  const sub=document.getElementById('home-sub');
+  if(sub) sub.textContent = t==='shared'
+    ? '팀이 함께 보는 기획안이에요. 올리기와 가져오기는 모두 복사라서 원본은 그대로예요.'
+    : '작성한 기획안이 모두 자동 저장돼요. 카드를 누르면 이어서 작업할 수 있어요.';
+  if(t==='shared'){ sharedRefresh('projects'); } else renderHome();
+}
+function setMatTab(t){
+  matTab=t; editingSharedMat=null;
+  document.getElementById('mtab-mine').classList.toggle('on', t==='mine');
+  document.getElementById('mtab-shared').classList.toggle('on', t==='shared');
+  const sub=document.getElementById('mat-sub');
+  if(sub) sub.textContent = t==='shared'
+    ? '팀이 함께 쓰는 재료함이에요. 여기에 적으면 바로 모두에게 보여요.'
+    : '대화, 읽은 글, 뉴스, 문득 떠오른 생각을 한 줄씩 모아두세요. 평범해도 괜찮아요. 모두가 하는 생각이 모두가 볼 이유가 되니까요.';
+  if(t==='shared'){ sharedRefresh('materials'); } else renderMaterials();
+}
+async function sharedRefresh(which){
+  const g=document.getElementById(which==='materials'?'mat-grid':'proj-grid');
+  if(g) g.innerHTML='<div class="empty-hint">공용함을 불러오는 중이에요…</div>';
+  try{ await sharedPull(); }
+  catch(e){ if(g) g.innerHTML='<div class="empty-hint">공용함을 불러오지 못했어요. 잠시 후 다시 눌러보세요.</div>'; return; }
+  if(which==='materials') renderSharedMaterials(); else renderSharedProjects();
+}
+function cleanSharedDeleted(){
+  const cutoff=Date.now()-1000*60*60*24*90;
+  Object.keys(shared.deleted).forEach(id=>{ if(shared.deleted[id]<cutoff) delete shared.deleted[id]; });
+}
+function mergeById(first, second, del){
+  const map=new Map();
+  (first||[]).forEach(x=>{ if(x&&x.id&&!del[x.id]) map.set(x.id,x); });
+  (second||[]).forEach(x=>{ if(x&&x.id&&!del[x.id]) map.set(x.id,x); });
+  return [...map.values()];
+}
+async function sharedPull(){
+  const {data,error}=await supa.from('ploty_shared').select('data').eq('id',1).maybeSingle();
+  if(error) throw error;
+  const d=(data&&data.data)||{};
+  shared={
+    materials:Array.isArray(d.materials)?d.materials:[],
+    projects:Array.isArray(d.projects)?d.projects:[],
+    deleted:(d.deleted&&typeof d.deleted==='object'&&!Array.isArray(d.deleted))?d.deleted:{}
+  };
+  cleanSharedDeleted();
+}
+async function sharedPush(){
+  // 올리기 전에 서버 내용과 병합: 그 사이 다른 사람이 올린 것을 덮지 않게, 방금 편집한 내 것 우선
+  const {data}=await supa.from('ploty_shared').select('data').eq('id',1).maybeSingle();
+  const d=(data&&data.data)||{};
+  Object.entries(d.deleted||{}).forEach(([id,ts])=>{ if(!shared.deleted[id]||ts>shared.deleted[id]) shared.deleted[id]=ts; });
+  cleanSharedDeleted();
+  shared.materials=mergeById(d.materials||[], shared.materials, shared.deleted);
+  shared.projects=mergeById(d.projects||[], shared.projects, shared.deleted);
+  const {error}=await supa.from('ploty_shared').upsert({id:1, data:shared, updated_at:new Date().toISOString()});
+  if(error) throw error;
+}
+async function sharedSave(afterRender){
+  try{ await sharedPush(); }
+  catch(e){ alert('공용함에 저장하지 못했어요: '+(e.message||e)); try{ await sharedPull(); }catch(e2){} }
+  if(afterRender) afterRender();
+}
+
+/* ---------- 공용 재료 ---------- */
+function addSharedMaterial(text){
+  shared.materials.unshift({id:uid(), text, type:document.getElementById('mat-type').value, createdAt:Date.now(), by:displayId()});
+  document.getElementById('mat-input').value='';
+  renderSharedMaterials();
+  sharedSave(renderSharedMaterials);
+}
+function renderSharedMaterials(){
+  const g=document.getElementById('mat-grid'); if(!g) return;
+  if(!shared.materials.length){
+    editingSharedMat=null;
+    g.innerHTML='<div class="empty-hint">아직 공용 재료가 없어요.<br>위에 바로 적거나, 내 재료의 ⋯ 메뉴에서 <b>공용함에 올리기</b>를 눌러보세요.</div>';
+    return;
+  }
+  const liveEl = editingSharedMat && document.getElementById('smate-'+editingSharedMat);
+  const liveVal = liveEl ? liveEl.value : null;
+  g.innerHTML = shared.materials.map(m=>{
+    const tag=`<button class="tag ${m.type} tagbtn" style="align-self:flex-start" onclick="toggleSharedMatType('${m.id}')" title="누르면 종류가 바뀌어요">${m.type==='internal'?'내 생각·고민':'사람·사물'}</button>`;
+    const meta=`${new Date(m.createdAt).toLocaleDateString('ko-KR')}${m.by?' · '+esc(m.by):''}`;
+    if(m.id===editingSharedMat) return `
+    <div class="mat editing" id="smat-${m.id}">
+      ${tag}
+      <textarea id="smate-${m.id}" onkeydown="sharedMatEditKey(event,'${m.id}')" placeholder="내용을 적어보세요">${esc(m.text)}</textarea>
+      <div class="foot">
+        <span class="muted">${meta}</span>
+        <button class="keep" onclick="saveSharedMaterial('${m.id}')">저장</button>
+        <button onclick="cancelEditSharedMaterial()">취소</button>
+      </div>
+    </div>`;
+    return `
+    <div class="mat ${m.text.length>220?'clamp':''}" id="smat-${m.id}">
+      <button class="pmenu-btn" onclick="event.stopPropagation();toggleCardMenu('s-${m.id}',event)" title="더보기">⋯</button>
+      <div class="pmenu hidden" id="pm-s-${m.id}" onclick="event.stopPropagation()">
+        <button onclick="editSharedMaterial('${m.id}')">수정</button>
+        <button onclick="copySharedMaterialToMine('${m.id}')">내 재료함으로 복사</button>
+        <button onclick="delSharedMaterial('${m.id}')">삭제</button>
+      </div>
+      ${tag}
+      <p>${esc(m.text)}</p>
+      ${m.text.length>220?`<button class="more" onclick="sharedMatToggle('${m.id}',this)">펼쳐 보기</button>`:''}
+      <div class="foot"><span class="muted">${meta}</span></div>
+    </div>`;
+  }).join('');
+  if(editingSharedMat){
+    const ta=document.getElementById('smate-'+editingSharedMat);
+    if(ta){ if(liveVal!=null) ta.value=liveVal; autoGrow(ta); }
+    else editingSharedMat=null;
+  }
+}
+function sharedMatToggle(id, btn){
+  const el=document.getElementById('smat-'+id); if(!el) return;
+  const open=el.classList.toggle('clamp');
+  if(btn) btn.textContent = open ? '펼쳐 보기' : '접기';
+}
+function toggleSharedMatType(id){
+  const m=shared.materials.find(x=>x.id===id); if(!m) return;
+  m.type = m.type==='internal' ? 'external' : 'internal';
+  renderSharedMaterials();
+  sharedSave(renderSharedMaterials);
+}
+function editSharedMaterial(id){
+  editingSharedMat=id; renderSharedMaterials();
+  const ta=document.getElementById('smate-'+id);
+  if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+}
+function cancelEditSharedMaterial(){ editingSharedMat=null; renderSharedMaterials(); }
+function saveSharedMaterial(id){
+  const ta=document.getElementById('smate-'+id);
+  const m=shared.materials.find(x=>x.id===id);
+  if(!ta||!m) return;
+  const t=ta.value.trim();
+  if(!t){ alert('내용을 적어주세요.'); ta.focus(); return; }
+  m.text=t; m.updatedAt=Date.now();
+  editingSharedMat=null;
+  renderSharedMaterials();
+  sharedSave(renderSharedMaterials);
+}
+function sharedMatEditKey(e, id){
+  if(e.key==='Escape'){ e.preventDefault(); cancelEditSharedMaterial(); }
+  else if(e.key==='Enter' && (e.metaKey||e.ctrlKey)){ e.preventDefault(); saveSharedMaterial(id); }
+}
+function delSharedMaterial(id){
+  if(!confirm('이 재료를 공용함에서 삭제할까요? 팀 모두에게서 사라져요.')) return;
+  shared.deleted[id]=Date.now();
+  shared.materials=shared.materials.filter(m=>m.id!==id);
+  renderSharedMaterials();
+  sharedSave(renderSharedMaterials);
+}
+function copySharedMaterialToMine(id){
+  const m=shared.materials.find(x=>x.id===id); if(!m) return;
+  if(state.materials.some(x=>x.text===m.text)){ alert('같은 내용이 내 재료함에 이미 있어요.'); return; }
+  state.materials.unshift({id:uid(), text:m.text, type:m.type, createdAt:Date.now()});
+  save();
+  alert('내 재료함에 복사했어요.');
+}
+function shareMaterialToShared(id){
+  const m=state.materials.find(x=>x.id===id); if(!m) return;
+  if(shared.materials.some(x=>x.text===m.text)){ alert('같은 내용이 공용함에 이미 있어요.'); return; }
+  shared.materials.unshift({id:uid(), text:m.text, type:m.type, createdAt:Date.now(), by:displayId()});
+  sharedSave(()=>{ alert('공용 재료함에 올렸어요.'); });
+}
+
+/* ---------- 공용 기획안 ---------- */
+function renderSharedProjects(){
+  const g=document.getElementById('proj-grid'); if(!g) return;
+  const cnt=document.getElementById('proj-count');
+  if(cnt) cnt.textContent = shared.projects.length ? shared.projects.length+'개' : '';
+  if(!shared.projects.length){
+    g.innerHTML='<div class="empty-hint" style="padding:40px 0">아직 공용 기획안이 없어요.<br>내 기획안 카드의 ⋯ 메뉴에서 <b>공용함에 올리기</b>를 눌러보세요.</div>';
+    return;
+  }
+  g.innerHTML = shared.projects.map(p=>{
+    const sc=p.score;
+    const meta=`${new Date(p.sharedAt||p.createdAt).toLocaleDateString('ko-KR')}${p.by?' · '+esc(p.by):''}`;
+    return `
+    <div class="pcard" style="cursor:default">
+      <button class="pmenu-btn" onclick="event.stopPropagation();toggleCardMenu('s-${p.id}',event)" title="더보기">⋯</button>
+      <div class="pmenu hidden" id="pm-s-${p.id}" onclick="event.stopPropagation()">
+        <button onclick="copySharedProjectToMine('${p.id}')">내 보관함으로 가져오기</button>
+        <button onclick="delSharedProject('${p.id}')">삭제</button>
+      </div>
+      <div class="ptitle">${esc(p.title||'무제')}</div>
+      <div class="pstart">${esc(p.card&&p.card.start||'시작점이 비어 있어요')}</div>
+      <div class="pfoot">
+        <span class="pscore">${sc!=null ? `${starsHTML(sc)} <span class="score-num">${sc}</span>` : '<span class="noscore">채점 전</span>'}</span>
+        <span class="pmeta">${meta}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+function shareProjectToShared(id){
+  const src=state.projects.find(x=>x.id===id); if(!src) return;
+  let copy; try{ copy=cloneProject(src); }catch(e){ alert('올리지 못했어요.'); return; }
+  copy.by=displayId(); copy.sharedAt=Date.now(); copy.mark='';
+  shared.projects.unshift(copy);
+  sharedSave(()=>{ alert('공용 기획함에 올렸어요.'); });
+}
+function copySharedProjectToMine(id){
+  const src=shared.projects.find(x=>x.id===id); if(!src) return;
+  let copy; try{ copy=cloneProject(src); }catch(e){ alert('가져오지 못했어요.'); return; }
+  delete copy.by; delete copy.sharedAt;
+  state.projects.unshift(copy);
+  save();
+  alert('내 보관함으로 가져왔어요. 내 기획안 탭에서 이어서 작업할 수 있어요.');
+}
+function delSharedProject(id){
+  if(!confirm('이 기획안을 공용함에서 삭제할까요? 팀 모두에게서 사라져요.')) return;
+  shared.deleted[id]=Date.now();
+  shared.projects=shared.projects.filter(p=>p.id!==id);
+  renderSharedProjects();
+  sharedSave(renderSharedProjects);
+}
+
+/* ---------- 멤버 관리 (관리자 전용) ---------- */
+async function shareAddMember(){
+  const inp=document.getElementById('share-add-id');
+  const id=(inp.value||'').trim(); if(!id) return;
+  try{
+    const {data,error}=await supa.rpc('ploty_add_member',{member_id:id});
+    if(error) throw error;
+    if(data!=='ok'){ document.getElementById('my-msg').textContent=data; return; }
+    inp.value='';
+    document.getElementById('my-msg').textContent=id+' 님을 공용함 멤버로 추가했어요.';
+    renderShareMembers();
+  }catch(e){ document.getElementById('my-msg').textContent='추가하지 못했어요: '+(e.message||e); }
+}
+async function shareRemoveMember(id){
+  if(!confirm(id+' 님을 공용함 멤버에서 뺄까요? 그분에게 공용함이 더 이상 보이지 않아요.')) return;
+  try{
+    const {data,error}=await supa.rpc('ploty_remove_member',{member_id:id});
+    if(error) throw error;
+    if(data!=='ok'){ document.getElementById('my-msg').textContent=data; return; }
+    renderShareMembers();
+  }catch(e){ document.getElementById('my-msg').textContent='빼지 못했어요: '+(e.message||e); }
+}
+async function renderShareMembers(){
+  const el=document.getElementById('share-members'); if(!el) return;
+  el.textContent='명단을 불러오는 중…';
+  try{
+    const {data,error}=await supa.rpc('ploty_list_members');
+    if(error) throw error;
+    if(!data||!data.length){ el.textContent='아직 멤버가 없어요.'; return; }
+    el.innerHTML=data.map(m=>`
+      <div style="display:flex;align-items:center;gap:8px;margin:5px 0">
+        <span style="flex:1">${esc(m.member_id)}${m.admin?' <span style="font-size:0.74rem;color:var(--ink-30)">(관리자)</span>':''}</span>
+        ${m.admin?'':`<button class="btn line sm" onclick="shareRemoveMember('${esc(m.member_id)}')">빼기</button>`}
+      </div>`).join('');
+  }catch(e){ el.textContent='명단을 불러오지 못했어요: '+(e.message||e); }
+}
+
 let authMode='login';
 function setAuthMode(m){
   authMode=m;
@@ -2556,6 +2854,7 @@ async function afterLogin(user, id){
   const nm=document.getElementById('acct-name'); nm.textContent=id||displayId(); nm.classList.remove('hidden');
   document.getElementById('acct-logout').classList.remove('hidden');
   await cloudPull();
+  await checkShare(); // 공용함 권한이 있는 계정이면 공용 탭이 열려요
   switchView('home');
   if(!state.onboarded) startOnboarding();
 }
@@ -2568,6 +2867,8 @@ function openMyPage(){
   document.getElementById('my-pw').value=''; document.getElementById('my-pw2').value='';
   document.getElementById('my-msg').textContent='';
   renderBackups();
+  const sh=document.getElementById('my-share');
+  if(sh){ sh.classList.toggle('hidden', shareRole!=='admin'); if(shareRole==='admin') renderShareMembers(); }
   document.getElementById('modal-mypage').classList.remove('hidden');
 }
 function closeMyPage(){ document.getElementById('modal-mypage').classList.add('hidden'); }
