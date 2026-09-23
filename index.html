@@ -148,11 +148,17 @@ body.auth-locked header .util .hidden{display:none}
 .mat textarea{width:100%;border:none;border-radius:8px;background:#f5f5f5;padding:11px 12px;min-height:76px;resize:none;overflow:hidden;line-height:1.55;font-size:0.93rem}
 .mat textarea:focus{outline:1px solid var(--ink-30);outline-offset:-1px}
 .mat.editing{border-color:var(--ink-30)}
+/* 공용 기획안 미리보기 */
+.shpv-sec{margin-bottom:14px}
+.shpv-sec>b{display:block;font-size:0.82rem;margin-bottom:4px}
+.shpv-sec p{font-size:0.88rem;line-height:1.65;background:#f5f5f5;border-radius:8px;padding:10px 12px;margin:0}
+.shpv-plot b{display:block;font-size:0.76rem;color:var(--ink-60);margin:8px 0 3px}
+.shpv-plot p{margin-bottom:6px}
 
 /* ---------- 기획 상세 ---------- */
 .projbar{display:flex;align-items:center;gap:16px;margin-bottom:26px;flex-wrap:wrap;border-bottom:1px solid var(--ink);padding-bottom:14px}
-.projbar .back{font-weight:700;color:var(--ink-60);font-size:0.88rem}
-.projbar .back:hover{color:var(--red)}
+.projbar .back{font-weight:700;color:var(--ink-60);font-size:1rem;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;margin-left:-8px;flex-shrink:0}
+.projbar .back:hover{color:var(--red);background:#f0f0f0}
 .projbar textarea.title{font-size:1.6rem;font-weight:800;letter-spacing:-0.03em;border:none;background:none;flex:1;min-width:180px;padding:0;resize:none;overflow:hidden;line-height:1.25;font-family:inherit}
 .projbar textarea.title:focus{outline:none;border-bottom:1px solid var(--ink)}
 .projbar input.title:focus{outline:none}
@@ -349,7 +355,8 @@ body.auth-locked header .util .hidden{display:none}
   .pcard .del{font-size:0.85rem;padding:9px 6px}
   /* 모바일에서는 줄을 나눠 배치해요. 1줄 뒤로+제목, 2줄 버튼, 3줄 점수 */
   .projbar{gap:8px 10px;padding-bottom:10px}
-  .projbar .back{order:1}
+  .projbar .back{order:1;width:40px;height:40px;font-size:1.1rem}
+  .thelp-btn{width:32px;height:32px;font-size:0.85rem}
   .projbar textarea.title{order:2;flex:1 1 auto;min-width:0}
   .projbar .btn{order:3}
   .projbar #save-ind{order:4}
@@ -651,6 +658,19 @@ body.auth-locked header .util .hidden{display:none}
   </div>
 </div>
 
+<!-- 공용 기획안 미리보기 모달 -->
+<div id="modal-shpv" class="modal-bg hidden" onclick="if(event.target===this)closeSharedPreview()">
+  <div class="modal">
+    <h3 id="shpv-title"></h3>
+    <p class="muted" id="shpv-meta" style="margin-bottom:14px"></p>
+    <div id="shpv-body"></div>
+    <div class="row" style="margin-top:16px">
+      <button class="btn" id="shpv-copy">내 보관함으로 가져오기</button>
+      <button class="btn line" onclick="closeSharedPreview()">닫기</button>
+    </div>
+  </div>
+</div>
+
 <!-- 로그인 모달 -->
 <div id="modal-auth" class="modal-bg hidden">
   <div class="modal">
@@ -818,7 +838,8 @@ function renderHome(){
     g.innerHTML='<div class="empty-hint" style="padding:40px 0">아직 보관된 기획안이 없어요.<br>위에 <b>한 줄</b> 적고 Enter를 눌러보세요.</div>';
     return;
   }
-  g.innerHTML = state.projects.map(p=>{
+  // 최근에 만든 것이 위로
+  g.innerHTML = [...state.projects].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).map(p=>{
     const prog=cardProgress(p);
     const sc=p.score;
     return `
@@ -877,6 +898,14 @@ function toggleMatType(id){
 // 적어둔 재료를 다시 고쳐 쓰기
 let editingMat=null;
 function editMaterial(id){
+  // 다른 재료를 고치던 중이면, 적던 내용이 사라지기 전에 한 번 물어봐요
+  if(editingMat && editingMat!==id){
+    const prevTa=document.getElementById('mate-'+editingMat);
+    const prev=state.materials.find(x=>x.id===editingMat);
+    if(prevTa && prev && prevTa.value.trim()!==prev.text.trim()){
+      if(!confirm('수정하던 내용이 아직 저장되지 않았어요. 버리고 이 재료를 수정할까요?')) return;
+    }
+  }
   editingMat=id; renderMaterials();
   const ta=document.getElementById('mate-'+id);
   if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
@@ -907,7 +936,8 @@ function renderMaterials(){
   // 고쳐 쓰는 중이면, 다시 그려도 지금 적고 있던 내용이 사라지지 않게 합니다
   const liveEl = editingMat && document.getElementById('mate-'+editingMat);
   const liveVal = liveEl ? liveEl.value : null;
-  g.innerHTML = state.materials.map(m=>{
+  // 최근에 주운 것이 위로
+  g.innerHTML = [...state.materials].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).map(m=>{
     const tag=`<button class="tag ${m.type} tagbtn" style="align-self:flex-start" onclick="toggleMatType('${m.id}')" title="누르면 종류가 바뀌어요">${m.type==='internal'?'내 생각·고민':'사람·사물'}</button>`;
     const day=new Date(m.createdAt).toLocaleDateString('ko-KR');
     if(m.id===editingMat) return `
@@ -962,6 +992,8 @@ function createProject(name, startText){
   TEMPLATES.twostep.sections.forEach(s=>p.beats[s.key]=[]);
   p.activeScript=p.scripts[0].id;
   state.projects.unshift(p); state.activeProject=p.id; save();
+  // 공용 탭을 보던 중이었어도, 새 기획안은 내 기획안에 생기니 그쪽 탭으로 돌려놔요
+  if(typeof homeTab!=='undefined' && homeTab!=='mine'){ try{ setHomeTab('mine'); }catch(e){} }
 }
 function deleteProject(id){
   const p=state.projects.find(x=>x.id===id); if(!p) return;
@@ -2627,7 +2659,7 @@ function renderSharedMaterials(){
   }
   const liveEl = editingSharedMat && document.getElementById('smate-'+editingSharedMat);
   const liveVal = liveEl ? liveEl.value : null;
-  g.innerHTML = shared.materials.map(m=>{
+  g.innerHTML = [...shared.materials].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).map(m=>{
     const tag=`<button class="tag ${m.type} tagbtn" style="align-self:flex-start" onclick="toggleSharedMatType('${m.id}')" title="누르면 종류가 바뀌어요">${m.type==='internal'?'내 생각·고민':'사람·사물'}</button>`;
     const meta=`${new Date(m.createdAt).toLocaleDateString('ko-KR')}${m.by?' · '+esc(m.by):''}`;
     if(m.id===editingSharedMat) return `
@@ -2645,6 +2677,7 @@ function renderSharedMaterials(){
       <button class="pmenu-btn" onclick="event.stopPropagation();toggleCardMenu('s-${m.id}',event)" title="더보기">⋯</button>
       <div class="pmenu hidden" id="pm-s-${m.id}" onclick="event.stopPropagation()">
         <button onclick="editSharedMaterial('${m.id}')">수정</button>
+        <button onclick="sharedMaterialToProject('${m.id}')">이 재료로 기획 시작</button>
         <button onclick="copySharedMaterialToMine('${m.id}')">내 재료함으로 복사</button>
         <button onclick="delSharedMaterial('${m.id}')">삭제</button>
       </div>
@@ -2672,6 +2705,13 @@ function toggleSharedMatType(id){
   sharedSave(renderSharedMaterials);
 }
 function editSharedMaterial(id){
+  if(editingSharedMat && editingSharedMat!==id){
+    const prevTa=document.getElementById('smate-'+editingSharedMat);
+    const prev=shared.materials.find(x=>x.id===editingSharedMat);
+    if(prevTa && prev && prevTa.value.trim()!==prev.text.trim()){
+      if(!confirm('수정하던 내용이 아직 저장되지 않았어요. 버리고 이 재료를 수정할까요?')) return;
+    }
+  }
   editingSharedMat=id; renderSharedMaterials();
   const ta=document.getElementById('smate-'+id);
   if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
@@ -2699,6 +2739,11 @@ function delSharedMaterial(id){
   renderSharedMaterials();
   sharedSave(renderSharedMaterials);
 }
+function sharedMaterialToProject(id){
+  const m=shared.materials.find(x=>x.id===id); if(!m) return;
+  createProject(m.text.length>20?m.text.slice(0,20)+'…':m.text, m.text);
+  switchView('detail');
+}
 function copySharedMaterialToMine(id){
   const m=shared.materials.find(x=>x.id===id); if(!m) return;
   if(state.materials.some(x=>x.text===m.text)){ alert('같은 내용이 내 재료함에 이미 있어요.'); return; }
@@ -2722,13 +2767,14 @@ function renderSharedProjects(){
     g.innerHTML='<div class="empty-hint" style="padding:40px 0">아직 공용 기획안이 없어요.<br>내 기획안 카드의 ⋯ 메뉴에서 <b>공용함에 올리기</b>를 눌러보세요.</div>';
     return;
   }
-  g.innerHTML = shared.projects.map(p=>{
+  g.innerHTML = [...shared.projects].sort((a,b)=>((b.sharedAt||b.createdAt||0)-(a.sharedAt||a.createdAt||0))).map(p=>{
     const sc=p.score;
     const meta=`${new Date(p.sharedAt||p.createdAt).toLocaleDateString('ko-KR')}${p.by?' · '+esc(p.by):''}`;
     return `
-    <div class="pcard" style="cursor:default">
+    <div class="pcard" onclick="openSharedPreview('${p.id}')" title="누르면 내용을 볼 수 있어요">
       <button class="pmenu-btn" onclick="event.stopPropagation();toggleCardMenu('s-${p.id}',event)" title="더보기">⋯</button>
       <div class="pmenu hidden" id="pm-s-${p.id}" onclick="event.stopPropagation()">
+        <button onclick="openSharedPreview('${p.id}')">내용 보기</button>
         <button onclick="copySharedProjectToMine('${p.id}')">내 보관함으로 가져오기</button>
         <button onclick="delSharedProject('${p.id}')">삭제</button>
       </div>
@@ -2741,6 +2787,44 @@ function renderSharedProjects(){
     </div>`;
   }).join('');
 }
+/* 공용 기획안 미리보기 (읽기 전용) */
+function openSharedPreview(id){
+  const p=shared.projects.find(x=>x.id===id); if(!p) return;
+  document.getElementById('shpv-title').textContent=p.title||'무제';
+  document.getElementById('shpv-meta').textContent=[
+    p.by?('올린 사람 '+p.by):null,
+    new Date(p.sharedAt||p.createdAt).toLocaleDateString('ko-KR'),
+    p.score!=null?(p.score+'/100점'):null
+  ].filter(Boolean).join(' · ');
+  const box=(t,v)=> (v&&String(v).trim()) ? `<div class="shpv-sec"><b>${esc(t)}</b><p>${esc(v).replace(/\n/g,'<br>')}</p></div>` : '';
+  let html='';
+  const c=p.card||{};
+  html+=box('시작점', c.start);
+  html+=box('왜? 파고들기', c.decompose);
+  html+=box('보는 사람이 얻는 것'+(c.benefitType?` (${c.benefitType})`:''), c.benefit);
+  html+=box('하고 싶은 말', c.message);
+  html+=box('대신 보여줄 이야기', c.keycontent);
+  const tpl=TEMPLATES[p.template]||TEMPLATES.twostep;
+  const plot=tpl.sections.map(sec=>{
+    const bs=(p.beats&&p.beats[sec.key])||[];
+    if(!bs.length) return '';
+    return `<b>${esc(sec.label)}</b><p>${bs.map(b=>'· '+esc(b.text)).join('<br>')}</p>`;
+  }).filter(Boolean).join('');
+  if(plot) html+=`<div class="shpv-sec"><b>플롯 (${tpl.name})</b>${plot?'<div class="shpv-plot">'+plot+'</div>':''}</div>`;
+  const s=(p.scripts||[]).find(x=>x.id===p.activeScript)||(p.scripts||[])[0];
+  if(s){
+    const scr=SCRIPT_GROUPS.map(g=>{
+      const ls=(s.lines&&s.lines[g.key]||[]).filter(l=>l&&l.trim());
+      if(!ls.length) return '';
+      return `<b>${esc(g.label)}</b><p>${ls.map(l=>esc(l)).join('<br>')}</p>`;
+    }).filter(Boolean).join('');
+    if(scr) html+=`<div class="shpv-sec"><b>대본</b><div class="shpv-plot">${scr}</div></div>`;
+  }
+  document.getElementById('shpv-body').innerHTML = html || '<p class="muted">아직 채워진 내용이 없어요.</p>';
+  document.getElementById('shpv-copy').onclick=()=>{ closeSharedPreview(); copySharedProjectToMine(id); };
+  document.getElementById('modal-shpv').classList.remove('hidden');
+}
+function closeSharedPreview(){ document.getElementById('modal-shpv').classList.add('hidden'); }
 function shareProjectToShared(id){
   const src=state.projects.find(x=>x.id===id); if(!src) return;
   let copy; try{ copy=cloneProject(src); }catch(e){ alert('올리지 못했어요.'); return; }
